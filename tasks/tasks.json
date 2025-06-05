@@ -4,7 +4,7 @@
       "id": 1,
       "title": "Setup Multi-Format Document Ingestion",
       "description": "Implement the Python-centric document ingestion system that accepts PDF, DOCX, Markdown, and TXT files up to 150 MB or 1M tokens.",
-      "status": "pending",
+      "status": "done",
       "dependencies": [],
       "priority": "high",
       "details": "Create a unified document parser using `pdfplumber`, `pytesseract`, `python-docx`, and `markdown-it-py`. Design a common dataclass structure to represent parsed documents regardless of source format. Implement file size validation and token counting. Create a clean API for the ingestion service that will be called by the FastAPI gateway.",
@@ -14,7 +14,7 @@
       "id": 2,
       "title": "Implement Basic Verification Chain Framework",
       "description": "Create the core orchestration system for sequential verification passes (claim extraction, evidence retrieval, citation check, logic analysis, bias scan).",
-      "status": "pending",
+      "status": "done",
       "dependencies": [
         1
       ],
