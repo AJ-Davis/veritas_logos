@@ -22,6 +22,7 @@ from ...models.verification import (
 from ...models.document import ParsedDocument
 from ...document_ingestion import document_service
 from ..passes.base_pass import BaseVerificationPass, MockVerificationPass
+from ..passes.implementations.claim_extraction_pass import ClaimExtractionPass
 from ..config.chain_loader import ChainConfigLoader
 
 
@@ -64,12 +65,17 @@ class VerificationWorker:
     
     def _initialize_pass_registry(self):
         """Initialize the registry of available verification passes."""
-        # For now, register mock passes for all types
-        # These will be replaced with actual implementations in subsequent tasks
+        # Register the actual claim extraction pass
+        self.pass_registry[VerificationPassType.CLAIM_EXTRACTION] = ClaimExtractionPass()
+        
+        # Register mock passes for other types (to be replaced in subsequent tasks)
         for pass_type in VerificationPassType:
-            self.pass_registry[pass_type] = MockVerificationPass(pass_type)
+            if pass_type not in self.pass_registry:
+                self.pass_registry[pass_type] = MockVerificationPass(pass_type)
         
         logger.info(f"Initialized {len(self.pass_registry)} verification passes")
+        logger.info(f"Real implementations: {[VerificationPassType.CLAIM_EXTRACTION.value]}")
+        logger.info(f"Mock implementations: {[pt.value for pt in VerificationPassType if pt != VerificationPassType.CLAIM_EXTRACTION]}")
     
     def register_pass(self, pass_type: VerificationPassType, pass_instance: BaseVerificationPass):
         """

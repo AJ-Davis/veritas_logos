@@ -1,0 +1,44 @@
+---
+chain_id: "claim_extraction_test"
+name: "Claim Extraction Test Chain"
+description: "Simple test chain that only runs claim extraction for testing the implementation"
+version: "1.0"
+
+# Global settings
+stop_on_failure: false
+parallel_execution: false
+timeout_seconds: 300
+
+# Verification passes
+passes:
+  - name: "extract_claims"
+    pass_type: "claim_extraction"
+    description: "Extract claims from document using LLM"
+    enabled: true
+    timeout_seconds: 120
+    max_retries: 2
+    retry_delay_seconds: 5
+    depends_on: []
+    
+    parameters:
+      # LLM configuration
+      model: "gpt-4"
+      prompt_version: "v1"
+      
+      # Extraction settings
+      max_claims: 30
+      min_confidence: 0.5
+      
+      # Optional overrides for testing
+      # model: "claude-3-sonnet-20240229"  # Uncomment to use Anthropic
+      # prompt_version: "v2"  # Uncomment to use v2 prompts
+
+# Dependencies (none for this simple chain)
+dependencies: []
+
+# Metadata
+metadata:
+  purpose: "testing"
+  domain: "general"
+  complexity: "low"
+  estimated_duration_minutes: 2
