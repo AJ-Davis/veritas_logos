@@ -53,6 +53,13 @@ def test_model_creation():
     print("\nTesting model creation...")
     
     try:
+        from models.claims import (
+            ClaimLocation,
+            ExtractedClaim,
+            ClaimExtractionResult,
+            ClaimType,
+            ClaimCategory,
+        )
         # Test ClaimLocation
         location = ClaimLocation(
             start_position=100,

@@ -83,14 +83,12 @@ class MarkdownParser(BaseDocumentParser):
         # Join and clean up
         text = '\n'.join(text_parts)
         
-        # Remove markdown formatting
-        text = re.sub(r'\*\*(.*?)\*\*', r'\1', text)  # Bold
-        text = re.sub(r'\*(.*?)\*', r'\1', text)      # Italic
-        text = re.sub(r'`(.*?)`', r'\1', text)        # Inline code
-        text = re.sub(r'\[([^\]]+)\]\([^\)]+\)', r'\1', text)  # Links
-        text = re.sub(r'^#+\s*', '', text, flags=re.MULTILINE)  # Headers
-        text = re.sub(r'^\s*[-*+]\s+', '', text, flags=re.MULTILINE)  # Lists
-        text = re.sub(r'^\s*\d+\.\s+', '', text, flags=re.MULTILINE)  # Numbered lists
+        # Use markdown_it's renderer for clean text extraction
+        html = self.md.render(markdown_content)
+        # Then strip HTML tags for plain text
+        import re
+        text = re.sub('<[^<]+?>', '', html)
+        text = re.sub(r'\s+', ' ', text)  # Normalize whitespace
         
         return text.strip()
     
@@ -127,6 +125,7 @@ class MarkdownParser(BaseDocumentParser):
                             section_type=current_type,
                             position=position
                         ))
+                position += len(section_content) + 1
                 
                 # Start new section
                 current_section = [line] if line_stripped else []
@@ -164,8 +163,8 @@ class MarkdownParser(BaseDocumentParser):
         if line.startswith('#'):
             return "heading"
         
-        # Alternative header syntax
-        if len(line) > 0 and (line.startswith('===') or line.startswith('---')):
+        # Alternative header syntax (must be only equals or dashes)
+        if len(line) >= 3 and (set(line) == {'='} or set(line) == {'-'}):
             return "heading"
         
         # Code blocks

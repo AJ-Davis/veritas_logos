@@ -9,6 +9,9 @@ from typing import List, Dict, Any, Optional
 from datetime import datetime
 import logging
 import uuid
+import json
+import redis
+import os
 
 from ..models.verification import (
     VerificationTask,
@@ -34,21 +37,170 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Configure CORS
+# Configure CORS with secure origins
+# Define trusted origins that are allowed to access this API
+ALLOWED_ORIGINS = [
+    "http://localhost:3000",        # React development server
+    "http://localhost:8080",        # Vue.js development server
+    "http://localhost:5173",        # Vite development server
+    "https://your-frontend-domain.com",  # Production frontend domain
+    "https://admin.your-domain.com",     # Admin dashboard domain
+    # Add your specific trusted domains here
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Configure appropriately for production
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    # Only allow requests from trusted origins to prevent CSRF attacks
+    # and unauthorized access from malicious websites
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=True,  # Required for authentication cookies/headers
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],  # Explicit methods
+    allow_headers=["*"],     # Can be restricted further if needed
 )
 
 # Global configuration loader
 config_loader = ChainConfigLoader()
 
-# In-memory task storage (replace with database in production)
-task_storage: Dict[str, VerificationTask] = {}
-result_storage: Dict[str, VerificationChainResult] = {}
+# Redis connection for persistent storage across multiple workers/pods
+# Reuse the same Redis instance that Celery uses for consistency
+redis_url = os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/0')
+redis_client = redis.from_url(redis_url, decode_responses=True)
+
+# Storage key prefixes for Redis
+TASK_STORAGE_PREFIX = "verification_task:"
+RESULT_STORAGE_PREFIX = "verification_result:"
+
+
+class RedisTaskStorage:
+    """Redis-backed task storage for multi-worker safety."""
+    
+    def __init__(self, redis_client: redis.Redis):
+        self.redis = redis_client
+    
+    def store_task(self, task: VerificationTask) -> None:
+        """Store a verification task in Redis."""
+        key = f"{TASK_STORAGE_PREFIX}{task.task_id}"
+        # Convert task to dict and serialize to JSON
+        task_data = task.dict()
+        # Handle datetime serialization
+        task_data['created_at'] = task_data['created_at'].isoformat()
+        self.redis.setex(key, 86400, json.dumps(task_data))  # 24 hour TTL
+    
+    def get_task(self, task_id: str) -> Optional[VerificationTask]:
+        """Retrieve a verification task from Redis."""
+        key = f"{TASK_STORAGE_PREFIX}{task_id}"
+        task_data = self.redis.get(key)
+        if not task_data:
+            return None
+        
+        try:
+            data = json.loads(task_data)
+            # Convert datetime string back to datetime object
+            data['created_at'] = datetime.fromisoformat(data['created_at'])
+            # Reconstruct chain_config from dict
+            data['chain_config'] = VerificationChainConfig(**data['chain_config'])
+            return VerificationTask(**data)
+        except (json.JSONDecodeError, ValueError, TypeError) as e:
+            logger.error(f"Failed to deserialize task {task_id}: {e}")
+            return None
+    
+    def update_task_status(self, task_id: str, status: VerificationStatus) -> bool:
+        """Update task status in Redis."""
+        task = self.get_task(task_id)
+        if not task:
+            return False
+        
+        task.status = status
+        self.store_task(task)
+        return True
+    
+    def get_all_tasks(self, limit: int = 100) -> List[VerificationTask]:
+        """Get all tasks from Redis."""
+        pattern = f"{TASK_STORAGE_PREFIX}*"
+        keys = self.redis.keys(pattern)
+        tasks = []
+        
+        for key in keys[:limit]:
+            task_id = key.replace(TASK_STORAGE_PREFIX, "")
+            task = self.get_task(task_id)
+            if task:
+                tasks.append(task)
+        
+        return tasks
+    
+    def task_exists(self, task_id: str) -> bool:
+        """Check if a task exists in Redis."""
+        key = f"{TASK_STORAGE_PREFIX}{task_id}"
+        return bool(self.redis.exists(key))
+    
+    def delete_task(self, task_id: str) -> bool:
+        """Delete a task from Redis."""
+        key = f"{TASK_STORAGE_PREFIX}{task_id}"
+        return bool(self.redis.delete(key))
+
+
+class RedisResultStorage:
+    """Redis-backed result storage for multi-worker safety."""
+    
+    def __init__(self, redis_client: redis.Redis):
+        self.redis = redis_client
+    
+    def store_result(self, task_id: str, result: VerificationChainResult) -> None:
+        """Store a verification result in Redis."""
+        key = f"{RESULT_STORAGE_PREFIX}{task_id}"
+        # Convert result to dict and serialize to JSON
+        result_data = result.dict()
+        # Handle datetime serialization
+        if result_data.get('execution_start_time'):
+            result_data['execution_start_time'] = result_data['execution_start_time'].isoformat()
+        if result_data.get('execution_end_time'):
+            result_data['execution_end_time'] = result_data['execution_end_time'].isoformat()
+        
+        self.redis.setex(key, 86400, json.dumps(result_data))  # 24 hour TTL
+    
+    def get_result(self, task_id: str) -> Optional[VerificationChainResult]:
+        """Retrieve a verification result from Redis."""
+        key = f"{RESULT_STORAGE_PREFIX}{task_id}"
+        result_data = self.redis.get(key)
+        if not result_data:
+            return None
+        
+        try:
+            data = json.loads(result_data)
+            # Convert datetime strings back to datetime objects
+            if data.get('execution_start_time'):
+                data['execution_start_time'] = datetime.fromisoformat(data['execution_start_time'])
+            if data.get('execution_end_time'):
+                data['execution_end_time'] = datetime.fromisoformat(data['execution_end_time'])
+            
+            return VerificationChainResult(**data)
+        except (json.JSONDecodeError, ValueError, TypeError) as e:
+            logger.error(f"Failed to deserialize result {task_id}: {e}")
+            return None
+    
+    def get_all_results(self) -> List[VerificationChainResult]:
+        """Get all results from Redis."""
+        pattern = f"{RESULT_STORAGE_PREFIX}*"
+        keys = self.redis.keys(pattern)
+        results = []
+        
+        for key in keys:
+            task_id = key.replace(RESULT_STORAGE_PREFIX, "")
+            result = self.get_result(task_id)
+            if result:
+                results.append(result)
+        
+        return results
+    
+    def result_exists(self, task_id: str) -> bool:
+        """Check if a result exists in Redis."""
+        key = f"{RESULT_STORAGE_PREFIX}{task_id}"
+        return bool(self.redis.exists(key))
+
+
+# Initialize Redis-backed storage
+task_storage = RedisTaskStorage(redis_client)
+result_storage = RedisResultStorage(redis_client)
 
 
 # Dependency injection
@@ -61,6 +213,14 @@ def get_config_loader() -> ChainConfigLoader:
 async def startup_event():
     """Initialize the application on startup."""
     logger.info("Starting VeritasLogos Verification API")
+    
+    # Test Redis connection
+    try:
+        redis_client.ping()
+        logger.info(f"Successfully connected to Redis at {redis_url}")
+    except Exception as e:
+        logger.error(f"Failed to connect to Redis at {redis_url}: {str(e)}")
+        raise RuntimeError(f"Redis connection failed: {str(e)}")
     
     # Initialize default configurations
     try:
@@ -132,17 +292,38 @@ async def health_check():
         celery_health = celery_app.control.ping(timeout=1.0)
         celery_status = "healthy" if celery_health else "unhealthy"
         
+        # Check Redis connectivity
+        try:
+            redis_client.ping()
+            redis_status = "healthy"
+        except Exception as e:
+            logger.error(f"Redis health check failed: {e}")
+            redis_status = "unhealthy"
+        
+        # Count active tasks from Redis
+        try:
+            active_task_count = len(task_storage.get_all_tasks())
+        except Exception as e:
+            logger.error(f"Failed to count active tasks: {e}")
+            active_task_count = 0
+        
+        overall_status = "healthy" if all([
+            celery_status == "healthy",
+            redis_status == "healthy"
+        ]) else "degraded"
+        
         return {
-            "status": "healthy",
+            "status": overall_status,
             "timestamp": datetime.utcnow().isoformat(),
             "components": {
                 "api": "healthy",
                 "celery": celery_status,
+                "redis": redis_status,
                 "document_service": "healthy",
                 "config_loader": "healthy"
             },
             "loaded_chains": len(config_loader.loaded_chains),
-            "active_tasks": len(task_storage)
+            "active_tasks": active_task_count
         }
     except Exception as e:
         logger.error(f"Health check failed: {str(e)}")
@@ -213,12 +394,18 @@ async def submit_verification_task(
         metadata=request.metadata
     )
     
-    # Store task
-    task_storage[verification_task.task_id] = verification_task
+    # Store task in Redis
+    task_storage.store_task(verification_task)
     
     # Submit to Celery
     try:
-        celery_task = execute_verification_chain_task.delay(verification_task.dict())
+        # Use the SAME id for both layers
+        from fastapi.encoders import jsonable_encoder
+        payload = jsonable_encoder(verification_task)
+        celery_task = execute_verification_chain_task.apply_async(
+            args=[payload], 
+            task_id=verification_task.task_id  # keep ids in sync
+        )
         
         logger.info(f"Submitted verification task {verification_task.task_id} to Celery")
         
@@ -235,7 +422,7 @@ async def submit_verification_task(
         
     except Exception as e:
         # Remove from storage if submission failed
-        task_storage.pop(verification_task.task_id, None)
+        task_storage.delete_task(verification_task.task_id)
         logger.error(f"Failed to submit task to Celery: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -247,14 +434,13 @@ async def submit_verification_task(
 async def get_task_status(task_id: str):
     """Get the status of a verification task."""
     
-    # Check if task exists
-    if task_id not in task_storage:
+    # Check if task exists in Redis
+    task = task_storage.get_task(task_id)
+    if not task:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Task '{task_id}' not found"
         )
-    
-    task = task_storage[task_id]
     
     # Check Celery task status
     try:
@@ -275,7 +461,7 @@ async def get_task_status(task_id: str):
         elif celery_task.state == 'SUCCESS':
             result_data = celery_task.result
             chain_result = VerificationChainResult(**result_data)
-            result_storage[task_id] = chain_result
+            result_storage.store_result(task_id, chain_result)
             
             status_response = TaskStatusResponse(
                 task_id=task_id,
@@ -309,15 +495,16 @@ async def get_task_status(task_id: str):
 async def get_task_result(task_id: str):
     """Get the detailed result of a completed verification task."""
     
-    # Check if result exists
-    if task_id not in result_storage:
+    # Check if result exists in Redis
+    chain_result = result_storage.get_result(task_id)
+    if not chain_result:
         # Try to get from Celery
         try:
             celery_task = celery_app.AsyncResult(task_id)
             if celery_task.state == 'SUCCESS':
                 result_data = celery_task.result
                 chain_result = VerificationChainResult(**result_data)
-                result_storage[task_id] = chain_result
+                result_storage.store_result(task_id, chain_result)
                 return chain_result
         except Exception as e:
             logger.error(f"Failed to retrieve result from Celery: {str(e)}")
@@ -327,7 +514,7 @@ async def get_task_result(task_id: str):
             detail=f"Result for task '{task_id}' not found or not ready"
         )
     
-    return result_storage[task_id]
+    return chain_result
 
 
 @app.get("/tasks", response_model=List[Dict[str, Any]])
@@ -338,7 +525,9 @@ async def list_tasks(
     """List verification tasks with optional status filtering."""
     
     tasks = []
-    for task_id, task in list(task_storage.items())[:limit]:
+    all_tasks = task_storage.get_all_tasks(limit)
+    
+    for task in all_tasks:
         task_info = {
             "task_id": task.task_id,
             "document_id": task.document_id,
@@ -359,7 +548,7 @@ async def list_tasks(
 async def cancel_task(task_id: str):
     """Cancel a pending or running verification task."""
     
-    if task_id not in task_storage:
+    if not task_storage.task_exists(task_id):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Task '{task_id}' not found"
@@ -369,9 +558,8 @@ async def cancel_task(task_id: str):
         # Revoke the Celery task
         celery_app.control.revoke(task_id, terminate=True)
         
-        # Update task status
-        task = task_storage[task_id]
-        task.status = VerificationStatus.CANCELLED
+        # Update task status in Redis
+        task_storage.update_task_status(task_id, VerificationStatus.CANCELLED)
         
         logger.info(f"Cancelled verification task {task_id}")
         
@@ -389,15 +577,17 @@ async def cancel_task(task_id: str):
 async def get_metrics():
     """Get verification system metrics."""
     
-    # Calculate metrics from stored tasks
-    total_tasks = len(task_storage)
-    completed_tasks = len([t for t in task_storage.values() if t.status == VerificationStatus.COMPLETED])
-    failed_tasks = len([t for t in task_storage.values() if t.status == VerificationStatus.FAILED])
+    # Calculate metrics from stored tasks in Redis
+    all_tasks = task_storage.get_all_tasks()
+    total_tasks = len(all_tasks)
+    completed_tasks = len([t for t in all_tasks if t.status == VerificationStatus.COMPLETED])
+    failed_tasks = len([t for t in all_tasks if t.status == VerificationStatus.FAILED])
     successful_tasks = completed_tasks - failed_tasks
     
-    # Calculate average execution time from results
+    # Calculate average execution time from results in Redis
     execution_times = []
-    for result in result_storage.values():
+    all_results = result_storage.get_all_results()
+    for result in all_results:
         if result.total_execution_time_seconds:
             execution_times.append(result.total_execution_time_seconds)
     

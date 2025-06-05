@@ -94,7 +94,11 @@ class OpenAIProvider(BaseLLMProvider):
                 content=response.choices[0].message.content,
                 provider=LLMProvider.OPENAI,
                 model=self.config.model,
-                usage=response.usage.dict() if response.usage else {},
+                usage=(response.usage.model_dump()  # v1 SDK
+                       if hasattr(response.usage, "model_dump")
+                       else dict(response.usage)              # fallback
+                       if response and getattr(response, "usage", None)
+                       else {}),
                 response_time_seconds=response_time,
                 metadata={
                     "finish_reason": response.choices[0].finish_reason,
@@ -140,13 +144,38 @@ class AnthropicProvider(BaseLLMProvider):
         start_time = time.time()
         
         try:
-            # Convert messages format for Anthropic
+            # Convert messages format for Anthropic while preserving chronological order
+            # Anthropic API requires system messages to be handled separately, but we need
+            # to preserve the chronological order by embedding system messages as user messages
+            # when they appear mid-conversation
+            
             system_message = ""
             anthropic_messages = []
             
-            for msg in messages:
+            # First pass: collect initial system messages (before any user/assistant messages)
+            initial_system_messages = []
+            first_non_system_index = 0
+            
+            for i, msg in enumerate(messages):
                 if msg["role"] == "system":
-                    system_message += msg["content"] + "\n"
+                    initial_system_messages.append(msg["content"])
+                    first_non_system_index = i + 1
+                else:
+                    break
+            
+            # Combine initial system messages for the system parameter
+            if initial_system_messages:
+                system_message = "\n".join(initial_system_messages)
+            
+            # Second pass: process remaining messages in chronological order
+            for msg in messages[first_non_system_index:]:
+                if msg["role"] == "system":
+                    # For system messages that appear mid-conversation, 
+                    # convert them to user messages to preserve chronological order
+                    anthropic_messages.append({
+                        "role": "user",
+                        "content": f"[SYSTEM INSTRUCTION]: {msg['content']}"
+                    })
                 else:
                     anthropic_messages.append({
                         "role": msg["role"],
@@ -168,7 +197,7 @@ class AnthropicProvider(BaseLLMProvider):
                 content=response.content[0].text,
                 provider=LLMProvider.ANTHROPIC,
                 model=self.config.model,
-                usage=response.usage.dict() if hasattr(response, 'usage') else {},
+                usage=response.usage if hasattr(response, "usage") else {},
                 response_time_seconds=response_time,
                 metadata={
                     "stop_reason": response.stop_reason,

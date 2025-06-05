@@ -71,9 +71,9 @@ class DocumentIngestionService:
             Parser instance or None if no suitable parser found
         """
         file_ext = Path(file_path).suffix.lower()
-        return self._parser_map.get(file_ext)
-    
     def parse_document(self, file_path: str, **kwargs) -> ParsedDocument:
+...
+            return parser.parse(file_path, **kwargs)
         """
         Parse a document file and return structured content.
         

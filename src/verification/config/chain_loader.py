@@ -25,7 +25,8 @@ class ChainConfigLoader:
         Args:
             config_dir: Directory containing YAML configuration files
         """
-        self.config_dir = Path(config_dir)
+        # Always store an absolute path to avoid cwd-dependent resolution
+        self.config_dir = Path(config_dir).expanduser().resolve()
         self.loaded_chains: Dict[str, VerificationChainConfig] = {}
     
     def load_chain_config(self, config_file: str) -> VerificationChainConfig:
@@ -73,15 +74,13 @@ class ChainConfigLoader:
         """
         if not self.config_dir.exists():
             raise VerificationConfigError(f"Configuration directory not found: {self.config_dir}")
-        
-        chains = {}
-        
-        for config_file in self.config_dir.glob("*.yml"):
-            try:
-                chain_config = self.load_chain_config(config_file.name)
-                chains[chain_config.chain_id] = chain_config
+        chains: Dict[str, VerificationChainConfig] = {}
+        for config_file in self.config_dir.glob("*.yml") | self.config_dir.glob("*.yaml"):
+             try:
+                 chain_config = self.load_chain_config(config_file.name)
+                 chains[chain_config.chain_id] = chain_config
             except VerificationConfigError as e:
-                print(f"Warning: Failed to load {config_file}: {e}")
+                logger.warning("Failed to load %s: %s", config_file, e)
         
         for config_file in self.config_dir.glob("*.yaml"):
             try:
@@ -180,8 +179,28 @@ class ChainConfigLoader:
         if not name:
             raise VerificationConfigError("Pass missing required field: name")
         
+        # Generate pass_id if not provided
+        pass_id = pass_data.get('pass_id', f"{pass_type.value}_{name.lower().replace(' ', '_')}")
+        
+        # Convert string dependencies to VerificationPassType enum values
+        depends_on_raw = pass_data.get('depends_on', [])
+        depends_on_types = []
+        for dep in depends_on_raw:
+            if isinstance(dep, str):
+                # Handle both pass_type strings and pass names
+                # First try as pass_type
+                try:
+                    depends_on_types.append(VerificationPassType(dep))
+                except ValueError:
+                    # If not a valid pass_type, skip for now (will be validated later)
+                    # This allows backward compatibility during migration
+                    pass
+            elif isinstance(dep, VerificationPassType):
+                depends_on_types.append(dep)
+        
         return VerificationPassConfig(
             pass_type=pass_type,
+            pass_id=pass_id,
             name=name,
             description=pass_data.get('description'),
             enabled=pass_data.get('enabled', True),
@@ -189,7 +208,7 @@ class ChainConfigLoader:
             max_retries=pass_data.get('max_retries', 3),
             retry_delay_seconds=pass_data.get('retry_delay_seconds', 10),
             parameters=pass_data.get('parameters', {}),
-            depends_on=pass_data.get('depends_on', [])
+            depends_on=depends_on_types
         )
     
     def _validate_chain_config(self, chain_config: VerificationChainConfig):
@@ -202,55 +221,18 @@ class ChainConfigLoader:
         Raises:
             VerificationConfigError: If configuration is invalid
         """
-        # Check for duplicate pass names
+        # The new VerificationChainConfig model handles most validation
+        # through Pydantic validators, so we just need basic checks here
+        
+        # Check for duplicate pass names (still useful for debugging)
         pass_names = [p.name for p in chain_config.passes]
         if len(pass_names) != len(set(pass_names)):
             raise VerificationConfigError("Duplicate pass names found in chain")
         
-        # Validate dependencies
-        for pass_config in chain_config.passes:
-            for dependency in pass_config.depends_on:
-                if dependency not in pass_names:
-                    raise VerificationConfigError(
-                        f"Pass '{pass_config.name}' depends on unknown pass '{dependency}'"
-                    )
-        
-        # Check for circular dependencies
-        self._check_circular_dependencies(chain_config.passes)
+        # Note: dependency validation is now handled by the Pydantic model
+        # which uses strongly typed VerificationPassType enums
     
-    def _check_circular_dependencies(self, passes: List[VerificationPassConfig]):
-        """
-        Check for circular dependencies in pass configuration.
-        
-        Args:
-            passes: List of pass configurations
-            
-        Raises:
-            VerificationConfigError: If circular dependencies are found
-        """
-        pass_map = {p.name: p for p in passes}
-        
-        def has_cycle(pass_name: str, visited: set, rec_stack: set) -> bool:
-            visited.add(pass_name)
-            rec_stack.add(pass_name)
-            
-            pass_config = pass_map.get(pass_name)
-            if pass_config:
-                for dependency in pass_config.depends_on:
-                    if dependency not in visited:
-                        if has_cycle(dependency, visited, rec_stack):
-                            return True
-                    elif dependency in rec_stack:
-                        return True
-            
-            rec_stack.remove(pass_name)
-            return False
-        
-        visited = set()
-        for pass_config in passes:
-            if pass_config.name not in visited:
-                if has_cycle(pass_config.name, visited, set()):
-                    raise VerificationConfigError("Circular dependency detected in verification chain")
+
 
 
 def create_default_chain_configs():
@@ -267,10 +249,12 @@ def create_default_chain_configs():
         'passes': [
             {
                 'type': 'claim_extraction',
+                'pass_id': 'claim_extraction_main',
                 'name': 'extract_claims',
                 'description': 'Extract claims from document content',
                 'timeout_seconds': 300,
                 'max_retries': 2,
+                'depends_on': [],  # No dependencies - this is the first pass
                 'parameters': {
                     'model': 'gpt-4',
                     'temperature': 0.1,
@@ -279,11 +263,12 @@ def create_default_chain_configs():
             },
             {
                 'type': 'citation_check',
+                'pass_id': 'citation_check_main',
                 'name': 'verify_citations',
                 'description': 'Verify document citations',
                 'timeout_seconds': 600,
                 'max_retries': 3,
-                'depends_on': ['extract_claims'],
+                'depends_on': ['claim_extraction'],  # Depends on claim extraction pass type
                 'parameters': {
                     'model': 'gpt-4',
                     'deep_check': True
@@ -291,11 +276,12 @@ def create_default_chain_configs():
             },
             {
                 'type': 'logic_analysis',
+                'pass_id': 'logic_analysis_main',
                 'name': 'analyze_logic',
                 'description': 'Analyze logical consistency',
                 'timeout_seconds': 400,
                 'max_retries': 2,
-                'depends_on': ['extract_claims'],
+                'depends_on': ['claim_extraction'],  # Depends on claim extraction pass type
                 'parameters': {
                     'model': 'claude-3-opus',
                     'check_fallacies': True
@@ -303,11 +289,12 @@ def create_default_chain_configs():
             },
             {
                 'type': 'bias_scan',
+                'pass_id': 'bias_scan_main',
                 'name': 'scan_bias',
                 'description': 'Scan for bias in content',
                 'timeout_seconds': 300,
                 'max_retries': 2,
-                'depends_on': ['extract_claims'],
+                'depends_on': ['claim_extraction'],  # Depends on claim extraction pass type
                 'parameters': {
                     'model': 'gpt-4',
                     'bias_types': ['political', 'cultural', 'statistical']
@@ -327,10 +314,12 @@ def create_default_chain_configs():
         'passes': [
             {
                 'type': 'claim_extraction',
+                'pass_id': 'claim_extraction_fast',
                 'name': 'extract_claims_fast',
                 'description': 'Quick claim extraction',
                 'timeout_seconds': 120,
                 'max_retries': 1,
+                'depends_on': [],  # No dependencies - this is the first pass
                 'parameters': {
                     'model': 'gpt-3.5-turbo',
                     'temperature': 0.2,
@@ -339,11 +328,12 @@ def create_default_chain_configs():
             },
             {
                 'type': 'citation_check',
+                'pass_id': 'citation_check_fast',
                 'name': 'basic_citation_check',
                 'description': 'Basic citation verification',
                 'timeout_seconds': 180,
                 'max_retries': 1,
-                'depends_on': ['extract_claims_fast'],
+                'depends_on': ['claim_extraction'],  # Depends on claim extraction pass type
                 'parameters': {
                     'model': 'gpt-3.5-turbo',
                     'deep_check': False

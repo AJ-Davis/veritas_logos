@@ -175,35 +175,14 @@ class VerificationWorker:
             List of verification results
         """
         results = []
-        executed_passes = set()
         
-        # Sort passes by dependencies (topological sort)
-        sorted_passes = self._sort_passes_by_dependencies(chain_config.passes)
+        # Get passes in dependency-resolved order using the chain config's method
+        sorted_passes = chain_config.get_sequential_execution_order()
         
         for pass_config in sorted_passes:
             if not pass_config.enabled:
                 logger.info(f"Skipping disabled pass: {pass_config.name}")
                 continue
-            
-            # Check dependencies
-            if not self._check_pass_dependencies(pass_config, executed_passes):
-                error_msg = f"Dependencies not satisfied for pass: {pass_config.name}"
-                logger.error(error_msg)
-                
-                if chain_config.stop_on_failure:
-                    raise VerificationError(error_msg)
-                else:
-                    # Create failed result and continue
-                    failed_result = VerificationResult(
-                        pass_id=f"{pass_config.name}_failed",
-                        pass_type=pass_config.pass_type,
-                        status=VerificationStatus.FAILED,
-                        started_at=datetime.utcnow(),
-                        completed_at=datetime.utcnow(),
-                        error_message=error_msg
-                    )
-                    results.append(failed_result)
-                    continue
             
             # Execute the pass
             try:
@@ -218,7 +197,6 @@ class VerificationWorker:
                 # Execute with retries
                 result = await self._execute_pass_with_retries(pass_impl, context, pass_config)
                 results.append(result)
-                executed_passes.add(pass_config.name)
                 
                 # Check if we should stop on failure
                 if result.status == VerificationStatus.FAILED and chain_config.stop_on_failure:
@@ -231,7 +209,7 @@ class VerificationWorker:
                 
                 # Create failed result
                 failed_result = VerificationResult(
-                    pass_id=f"{pass_config.name}_error",
+                    pass_id=pass_config.pass_id,
                     pass_type=pass_config.pass_type,
                     status=VerificationStatus.FAILED,
                     started_at=datetime.utcnow(),
@@ -257,41 +235,58 @@ class VerificationWorker:
         Returns:
             List of verification results
         """
-        # This is a simplified parallel implementation
-        # A full implementation would build a dependency graph and execute in waves
+        # Use proper dependency-aware parallel execution
+        # Execute passes in dependency-ordered groups
         
         results = []
-        tasks = []
+        execution_groups = chain_config.get_parallel_execution_groups()
         
-        # For now, execute all enabled passes concurrently
-        for pass_config in chain_config.passes:
-            if pass_config.enabled:
-                pass_impl = self.pass_registry.get(pass_config.pass_type)
-                if pass_impl:
-                    task = self._execute_pass_with_retries(pass_impl, context, pass_config)
-                    tasks.append(task)
-        
-        # Wait for all tasks to complete
-        if tasks:
-            results = await asyncio.gather(*tasks, return_exceptions=True)
+        for group in execution_groups:
+            # Execute all passes in this group concurrently
+            task_configs = []  # Store tuples of (pass_config, task) for this group
             
-            # Convert exceptions to failed results
-            processed_results = []
-            for i, result in enumerate(results):
-                if isinstance(result, Exception):
-                    failed_result = VerificationResult(
-                        pass_id=f"parallel_error_{i}",
-                        pass_type=chain_config.passes[i].pass_type,
-                        status=VerificationStatus.FAILED,
-                        started_at=datetime.utcnow(),
-                        completed_at=datetime.utcnow(),
-                        error_message=str(result)
+            for pass_config in group:
+                if pass_config.enabled:
+                    # Update context with previous results before starting this group
+                    context.previous_results = results.copy()
+                    
+                    pass_impl = self.pass_registry.get(pass_config.pass_type)
+                    if pass_impl:
+                        task = self._execute_pass_with_retries(pass_impl, context, pass_config)
+                        task_configs.append((pass_config, task))
+        
+            # Wait for all tasks in this group to complete
+            if task_configs:
+                # Extract just the tasks for asyncio.gather
+                tasks = [task for _, task in task_configs]
+                group_results = await asyncio.gather(*tasks, return_exceptions=True)
+                
+                # Convert exceptions to failed results, properly correlating with pass configs
+                for i, result in enumerate(group_results):
+                    pass_config = task_configs[i][0]  # Get the corresponding pass_config
+                    
+                    if isinstance(result, Exception):
+                        failed_result = VerificationResult(
+                            pass_id=pass_config.pass_id,
+                            pass_type=pass_config.pass_type,
+                            status=VerificationStatus.FAILED,
+                            started_at=datetime.utcnow(),
+                            completed_at=datetime.utcnow(),
+                            error_message=str(result)
+                        )
+                        results.append(failed_result)
+                    else:
+                        results.append(result)
+                        
+                # Check if we should stop on failure
+                if chain_config.stop_on_failure:
+                    failed_in_group = any(
+                        isinstance(r, Exception) or r.status == VerificationStatus.FAILED 
+                        for r in group_results
                     )
-                    processed_results.append(failed_result)
-                else:
-                    processed_results.append(result)
-            
-            results = processed_results
+                    if failed_in_group:
+                        logger.error("Stopping parallel execution due to failure in group")
+                        break
         
         return results
     
@@ -331,7 +326,7 @@ class VerificationWorker:
         
         # All retries exhausted
         failed_result = VerificationResult(
-            pass_id=f"{config.name}_max_retries",
+            pass_id=config.pass_id,
             pass_type=config.pass_type,
             status=VerificationStatus.FAILED,
             started_at=datetime.utcnow(),
@@ -342,53 +337,7 @@ class VerificationWorker:
         
         return failed_result
     
-    def _sort_passes_by_dependencies(self, passes) -> List:
-        """
-        Sort passes by their dependencies using topological sort.
-        
-        Args:
-            passes: List of pass configurations
-            
-        Returns:
-            Sorted list of passes
-        """
-        # Simple implementation - a full implementation would do proper topological sort
-        pass_map = {p.name: p for p in passes}
-        sorted_passes = []
-        processed = set()
-        
-        def add_pass(pass_config):
-            if pass_config.name in processed:
-                return
-            
-            # Add dependencies first
-            for dep_name in pass_config.depends_on:
-                if dep_name in pass_map:
-                    add_pass(pass_map[dep_name])
-            
-            sorted_passes.append(pass_config)
-            processed.add(pass_config.name)
-        
-        for pass_config in passes:
-            add_pass(pass_config)
-        
-        return sorted_passes
-    
-    def _check_pass_dependencies(self, pass_config, executed_passes: set) -> bool:
-        """
-        Check if pass dependencies are satisfied.
-        
-        Args:
-            pass_config: Pass configuration
-            executed_passes: Set of already executed pass names
-            
-        Returns:
-            True if dependencies are satisfied
-        """
-        for dep_name in pass_config.depends_on:
-            if dep_name not in executed_passes:
-                return False
-        return True
+
     
     def _finalize_chain_result(self, chain_result: VerificationChainResult, 
                              start_time: float) -> VerificationChainResult:

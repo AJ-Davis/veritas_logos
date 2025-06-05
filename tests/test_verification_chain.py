@@ -204,7 +204,7 @@ class TestVerificationChainFramework:
     def test_dependency_validation(self):
         """Test validation of pass dependencies."""
         # Create chain config with invalid dependency
-        with pytest.raises(Exception):  # Should raise validation error
+        with pytest.raises(ValueError, match="Invalid dependency"):
             chain_config = VerificationChainConfig(
                 chain_id='invalid_chain',
                 name='Invalid Chain',
@@ -235,7 +235,7 @@ class TestVerificationChainFramework:
             )
         ]
         
-        with pytest.raises(Exception):  # Should detect circular dependency
+        with pytest.raises(ValueError, match="Circular dependency detected"):
             self.config_loader._check_circular_dependencies(passes)
 
 

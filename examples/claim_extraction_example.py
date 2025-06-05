@@ -79,7 +79,8 @@ def print_statistics(extraction_result: ClaimExtractionResult):
     # Type distribution
     print(f"\n📊 Claim Types:")
     for claim_type, count in extraction_result.claim_type_distribution.items():
-        percentage = (count / extraction_result.total_claims_found) * 100
+        total = max(extraction_result.total_claims_found, 1)
+        percentage = (count / total) * 100
         print(f"   {claim_type}: {count} ({percentage:.1f}%)")
     
     # Confidence distribution

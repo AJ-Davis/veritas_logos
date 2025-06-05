@@ -15,8 +15,12 @@ from ..utils.validation import validate_file_before_processing, validate_token_c
 class BaseDocumentParser(ABC):
     """Abstract base class for document parsers."""
     
-    def __init__(self):
-        self.supported_extensions = set()
+    def __init__(self, supported_extensions: Optional[set[str]] = None):
+        if not supported_extensions:
+            raise ValueError(
+                "Parser must declare at least one supported extension.")
+        self.supported_extensions: set[str] = {
+            e.lower() for e in supported_extensions}
         self.default_extraction_method = ExtractionMethod.DIRECT
     
     @abstractmethod
@@ -110,6 +114,8 @@ class BaseDocumentParser(ABC):
             parsed_doc.metadata.token_count = token_count
             
             if not is_valid:
+                if parsed_doc.errors is None:
+                    parsed_doc.errors = []
                 parsed_doc.errors.append(error)
             
             return parsed_doc

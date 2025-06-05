@@ -48,7 +48,8 @@ class PdfParser(BaseDocumentParser):
                         sections = ocr_sections
                         extraction_method = ExtractionMethod.OCR
                     else:
-                        extraction_method = ExtractionMethod.HYBRID
+                        # keep DIRECT if OCR adds no value
+                        extraction_method = ExtractionMethod.DIRECT
                 
                 # Set extraction method for this parser
                 self.default_extraction_method = extraction_method
@@ -210,7 +211,11 @@ class PdfParser(BaseDocumentParser):
             ocr_data = pytesseract.image_to_data(image.original, output_type=pytesseract.Output.DICT)
             
             # Calculate average confidence for the page
-            confidences = [int(conf) for conf in ocr_data['conf'] if int(conf) > 0]
+            confidences = [
+                int(conf)
+                for conf in ocr_data['conf']
+                if conf.isdigit() and int(conf) > 0
+            ]
             avg_confidence = sum(confidences) / len(confidences) if confidences else 0
             
         except Exception:

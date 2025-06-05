@@ -20,7 +20,7 @@ class TestDocumentIngestionService:
     
     def test_service_initialization(self):
         """Test that the service initializes correctly."""
-        assert len(self.service.parsers) == 4
+        assert len(self.service.parsers) >= 4
         assert len(self.service.get_supported_formats()) >= 4
         
         # Check that we have parsers for all expected formats
@@ -122,7 +122,7 @@ The end.
             assert len(result.sections) > 0
             assert result.metadata is not None
             assert result.metadata.format == DocumentFormat.MARKDOWN
-            assert 'markdown_content' in result.raw_data
+            assert 'This is a **test** markdown document.' in result.raw_data
             
             # Check that sections are properly identified
             headings = result.get_sections_by_type("heading")

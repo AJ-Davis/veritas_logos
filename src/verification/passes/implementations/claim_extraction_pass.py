@@ -7,6 +7,7 @@ import logging
 import os
 import re
 import time
+import uuid
 from typing import List, Dict, Any, Optional, Tuple
 from datetime import datetime
 
@@ -103,7 +104,7 @@ class ClaimExtractionPass(BaseVerificationPass):
             VerificationResult with extracted claims
         """
         start_time = time.time()
-        pass_id = f"claim_extraction_{int(start_time)}"
+        pass_id = f"claim_extraction_{uuid.uuid4().hex}"
         
         try:
             self.logger.info(f"Starting claim extraction for document {context.document_id}")
@@ -434,12 +435,13 @@ class ClaimExtractionPass(BaseVerificationPass):
         if len(claim_words) < 3:
             return -1
         
-        # Search in chunks
-        chunk_size = len(claim_text) * 2
+        # Search in chunks with safe bounds
+        chunk_size = max(6, len(claim_text) * 2)
+        step = max(1, chunk_size // 2)
         best_match_pos = -1
         best_match_score = 0
         
-        for i in range(0, len(document_content) - chunk_size + 1, chunk_size // 2):
+        for i in range(0, len(document_content) - chunk_size + 1, step):
             chunk = document_content[i:i + chunk_size]
             chunk_words = set(chunk.lower().split())
             
@@ -462,6 +464,9 @@ class ClaimExtractionPass(BaseVerificationPass):
             
         Returns:
             Provider key string
+            
+        Raises:
+            VerificationError: If no LLM providers are available
         """
         if model.startswith('gpt-'):
             return f"openai:{model}"
@@ -470,4 +475,6 @@ class ClaimExtractionPass(BaseVerificationPass):
         else:
             # Return first available provider
             available = self.llm_client.get_available_providers()
-            return available[0] if available else None
+            if not available:
+                raise VerificationError("No LLM providers available")
+            return available[0]

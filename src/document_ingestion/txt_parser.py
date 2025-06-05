@@ -99,8 +99,17 @@ class TxtParser(BaseDocumentParser):
                     position=position
                 ))
                 
-                # Update position for next section
-                position += len(paragraph) + 2  # +2 for the double newline
+                # Update position based on actual content location
+                # Find the actual position in the original content
+                remaining_content = content[position:]
+                paragraph_start = remaining_content.find(paragraph)
+                if paragraph_start >= 0:
+                    position += paragraph_start + len(paragraph)
+                    # Skip to next paragraph separator
+                    next_content = content[position:]
+                    next_para = next_content.find('\n\n')
+                    if next_para >= 0:
+                        position += next_para + 2
         
         return sections
     

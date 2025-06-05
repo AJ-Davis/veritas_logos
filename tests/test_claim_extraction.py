@@ -268,9 +268,9 @@ class TestClaimExtractionPass:
         assert extraction_result.total_claims_found == 2
         assert len(extraction_result.claims) == 2
         
-        # Verify individual claims
-        claims = extraction_result.claims
-        assert claims[0].claim_text == "The Earth is round"
+        texts = {c.claim_text for c in extraction_result.claims}
+        assert {"The Earth is round",
+                "COVID-19 vaccines are 95% effective"} <= texts
         assert claims[0].claim_type == ClaimType.FACTUAL
         assert claims[1].claim_text == "COVID-19 vaccines are 95% effective"
         assert claims[1].claim_type == ClaimType.STATISTICAL

@@ -3,7 +3,10 @@ Validation utilities for document ingestion.
 """
 
 import os
-import tiktoken
+try:
+    import tiktoken
+except ModuleNotFoundError:  # pragma: no cover
+    tiktoken = None
 from typing import Tuple, Optional
 from pathlib import Path
 
@@ -104,7 +107,7 @@ def count_tokens(text: str, encoding_name: str = "cl100k_base") -> int:
         return len(encoding.encode(text))
     except Exception:
         # Fallback to simple word-based estimation if tiktoken fails
-        return len(text.split()) * 1.3  # Rough approximation
+        return int(len(text.split()) * 1.3)  # Rough approximation
 
 
 def validate_token_count(text: str) -> Tuple[bool, Optional[str], int]:

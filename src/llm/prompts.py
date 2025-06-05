@@ -293,7 +293,7 @@ class PromptManager:
         self.templates["claim_extraction:v2"] = ClaimExtractionPrompts.get_template("v2")
         self.templates["citation_check:v1"] = CitationCheckPrompts.get_template("v1")
         self.templates["logic_analysis:v1"] = LogicAnalysisPrompts.get_template("v1")
-        self.templates["bias_detection:v1"] = BiasDetectionPrompts.get_template("v1")
+        self.templates["bias_scan:v1"] = BiasDetectionPrompts.get_template("v1")
     
     def get_template(self, prompt_type: PromptType, version: str = "v1") -> PromptTemplate:
         """Get a prompt template by type and version."""
