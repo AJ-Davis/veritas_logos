@@ -1,0 +1,98 @@
+
+**VeritasLogos – Product Requirements Document (PRD)**
+*A Python-first, Multi-LLM Research Verification & Augmentation Platform*
+
+**Tagline:** VeritasLogos: LLMs in debate, refereed for truth – delivering unparalleled confidence in your knowledge-intensive documents.
+
+**New in this revision:** an Adversarial Cross-Validation Framework (ACVF) in which pairs—or rings—of LLMs alternately attack and defend each claim, citation, and reasoning chain, driving consensus and surfacing the hardest-to-spot errors.
+
+**1. Product Goals & Business Objectives**
+
+* **Goal 1: Achieve Market Leadership in AI-Assisted Verification:** Become the industry standard for verifying LLM-generated or assisted content in high-stakes professional environments (e.g., finance, academia, investigative journalism).
+* **Goal 2: Quantifiably Reduce Critical Errors:** Demonstrate a significant (target: >80%) reduction in hallucinations, factual inaccuracies, and logical fallacies in documents processed by VeritasLogos compared to unverified or single-LLM reviewed content. The ACVF is central to achieving superior error detection.
+* **Goal 3: Enhance User Trust & Efficiency:** Provide users with transparent, actionable insights that not only correct errors but also build confidence in AI tools and reduce manual review time by at least 50%.
+* **Goal 4: Drive Commercial Adoption:** Secure 50 paying enterprise clients within the first 18 months post-launch, focusing on sectors with high reputational or regulatory risk.
+
+**2. Overview**
+
+VeritasLogos applies a rigorous, scholarly-grade “quality seal” to any knowledge-intensive document produced or assisted by LLMs. It orchestrates multiple best-in-class models in a cooperative and adversarial verification chain to uncover hallucinations, invalid citations, logical fallacies, mis-inferred conclusions, and bias shifts. The platform delivers clear, actionable fixes to equity analysts, academics, investigative journalists, and corporate content teams who face reputational or regulatory risk when errors slip through. The introduction of the Adversarial Cross-Validation Framework (ACVF) represents a significant leap forward in achieving comprehensive and trustworthy verification.
+
+**3. Core Features**
+
+| # | Feature                                      | What It Does                                                                                                                                | Why It Matters (User & Product Value)                                                                                                     | Technology / Implementation Notes                                                               |
+|---|----------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------|
+| 1 | Python-Centric Multi-Format Ingestion        | Accepts PDF, DOCX, Markdown, TXT (≤ 150 MB / 1 M tokens).                                                                                 | Removes pre-conversion friction for users.                                                                                                | `pdfplumber`, `pytesseract`, `python-docx`, `markdown-it-py`; unified dataclass.                      |
+| 2 | Verification Chains                          | Sequential passes: claim extraction → evidence retrieval → citation check → logic analysis → bias scan.                                     | Exploits each model’s strength for more comprehensive and nuanced verification than a single model could achieve.                         | FastAPI + Celery; YAML chain configs; async retries.                                               |
+| 3 | Adversarial Cross-Validation Framework (ACVF) (NEW) | Pits LLM “Challenger” models against “Defender” models on every flagged item; a final “Judge” model adjudicates.                             | Drives recall on subtle errors; reduces single-model blind spots, leading to higher confidence and trustworthiness in the final output. | Round-robin tasks orchestrated in Python; weighted consensus scores stored in Pydantic schema.     |
+| 4 | Issue Detection & Flagging                   | Tags hallucinations, bad refs, logic breaks, mis-inferences, bias shifts.                                                                   | Highlights high-impact errors for focused review.                                                                                         | Pass-specific validators aggregate spans + confidence; ACVF escalates contentious items.          |
+| 5 | Actionable Outputs                           | Annotated PDF/DOCX, interactive dashboard, JSON API.                                                                                        | Fits both human and machine workflows, enabling seamless integration and use.                                                              | `python-docx`, `reportlab`, FastAPI.                                                                |
+| 6 | Stretch Enhancements                         | Version diffing, collaborative comments, GraphQL API, plausibility scoring.                                                                 | Extends value across the document lifecycle and for diverse integration needs.                                                            | Modular micro-services in Python.                                                                 |
+
+**4. User Experience**
+
+Personas, flows, and UI/UX remain as described in the previous comprehensive draft, with one key update:
+
+* **Dashboard “Debate View” (NEW):**
+    * For items escalated by ACVF, users can click “See Debate” to read the Challenger’s critique, Defender’s rebuttal, and Judge’s ruling + confidence score.
+    * **User Value:** This transparency allows users to understand the reasoning behind contentious flags, build trust in the verification process, and make more informed decisions on accepting or rejecting suggested fixes, especially for nuanced or high-stakes content. It empowers users by demystifying the AI's "thought process."
+
+**5. Technical Architecture**
+
+| Layer                | Python Components                                                                                                      | Notes                                                                                               |
+|----------------------|------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------|
+| Frontend             | React + TS; WebSocket progress; Debate modal.                                                                          | –                                                                                                   |
+| API Gateway          | FastAPI w/ JWT auth & Stripe hooks.                                                                                     | –                                                                                                   |
+| Task Queue           | Celery on RabbitMQ.                                                                                                    | –                                                                                                   |
+| Orchestrator         | Python service; now supports ACVF controller that: 1) pairs models, 2) tracks debate rounds, 3) triggers Judge.        | Config in `adversarial_chains.yml`. Other key ACVF-related configs to be detailed in design spec. |
+| LLM Adapters         | Typed Python wrappers for OpenRouter providers.                                                                        | Adds `role` param (Challenger/Defender/Judge).                                                      |
+| Verification Workers | Stateless; each handles a role + pass.                                                                                 | Defender sees Challenger’s critique in prompt.                                                      |
+| Storage / Analytics  | Unchanged; extra ACVF tables: `debate_rounds`, `judge_scores`.                                                           | ClickHouse dashboards show “debate depth”.                                                          |
+
+**6. Development Roadmap (Scope-Only)**
+
+| Phase                    | Must-Have                                                                                                 | Should-Have                       | Could-Have                   | Effort/Timeline (TBD) |
+|--------------------------|-----------------------------------------------------------------------------------------------------------|-----------------------------------|------------------------------|-----------------------|
+| 1 – Foundations          | Parsing, storage, single-model claim extraction.                                                          | –                                 | –                            | TBD                   |
+| 2 – Core Verification    | Citation checker, logic analysis, JSON results, basic dashboard.                                          | Annotated exports.                | –                            | TBD                   |
+| 3 – Adversarial Layer (NEW) | ACVF controller; Challenger-Defender rounds on citations & logic; Judge aggregation; Debate View UI. | Bias scan integrated into ACVF.   | Adaptive ring size (N>2).    | TBD                   |
+| 4 – Hardening            | Auth, billing, autoscaling, PII redaction.                                                                | SOC-2 controls.                   | –                            | TBD                   |
+| 5 – Collaboration & APIs | Shareable links, REST endpoints, comments.                                                                | Version diffing, webhooks.        | GraphQL.                     | TBD                   |
+| 6 – Advanced Intelligence | Plausibility scoring, RLHF on debate outcomes.                                                            | Multi-modal support.              | CMS workflow rules.          | TBD                   |
+
+*Logical Dependency Chain:*
+Parsing & Storage → Single-Model Passes (claim extraction) → Evidence + Citation Check → **Introduce ACVF on those passes (earliest user-visible “Wow”)** → Add Logic / Bias passes → ACVF wraps them next → Collab Layer & APIs → Advanced Intelligence & Multi-modal
+
+**7. Success Metrics / Key Performance Indicators (KPIs)**
+
+* **Adversarial Recall Metric:** Percentage of new errors surfaced *only* after ACVF intervention (Target: >15% lift over non-ACVF passes).
+* **Overall Error Detection Rate:** Percentage of known errors in benchmark documents successfully identified (Target: >95%).
+* **Reduction in Human Review Time:** Average percentage decrease in time spent by users manually verifying/correcting documents (Target: >50%).
+* **User Satisfaction Score (CSAT/NPS):** Focused on trust, accuracy, and usability (Target: CSAT > 80%, NPS > 40).
+* **Debate View Adoption Rate:** Percentage of users engaging with the "Debate View" for escalated items (Target: >60%).
+* **Task Completion Rate:** Percentage of flagged issues successfully resolved by users via platform suggestions (Target: >90%).
+* **LLM API Cost per Document:** Monitor and optimize cost efficiency of ACVF cycles.
+* **Active Users (Daily/Monthly):** Track platform engagement and growth.
+* **Customer Acquisition Rate (CAR) & Churn Rate:** For commercial success.
+
+**8. Risks & Mitigations**
+
+| Risk                               | Added by ACVF? | Likelihood | Impact | Mitigation                                                                                               |
+|------------------------------------|----------------|------------|--------|----------------------------------------------------------------------------------------------------------|
+| API cost explosion                 | Yes            | High       | Medium | Cap debate rounds (max 2); fallback to cheaper models for Challenger; sample only high-severity items.   |
+| Latency inflation                  | Yes            | Medium     | Medium | Run Challenger & Defender in parallel where feasible; stream partial results to UI; optimize model choice. |
+| Judge bias toward one model family | Yes            | Medium     | High   | Rotate Judge model regularly (e.g., monthly); consider ensemble of two Judges for critical edge cases.     |
+| Complexity of prompt engineering   | Yes            | High       | Medium | Central prompt library with versioning and regression tests (`pytest` + `pytest-recording`).             |
+| Over-correction/False Positives    | Yes            | Medium     | Medium | Tune Judge model sensitivity; provide clear confidence scores; allow user feedback on verdict quality.     |
+| User Confusion with Debates        | Yes            | Low        | Medium | Clear UI/UX for Debate View; tutorials and documentation; context-sensitive help.                          |
+
+**9. Appendix (Updates Only)**
+
+* **ACVF Prompt Templates – Challenger, Defender, Judge:** To be detailed in a separate specification document.
+* **Benchmark Suite v2 – adds adversarial recall metric:** Percentage of new errors surfaced only after ACVF. (Details in benchmarking plan).
+* **Pydantic Schema Addendum – `debate_history: List[DebateRound]`, `final_verdict: JudgeVerdict`:** Detailed definitions for `DebateRound` and `JudgeVerdict` (including all fields like critique, rebuttal, ruling, confidence scores) will be part of the data model specification.
+
+---
+
+Prepared by: Senior Product Manager — June 2025
+
+**VeritasLogos now not only checks but actively challenges itself—LLMs in debate, refereed for truth—delivering the highest possible confidence in every verified document.**
