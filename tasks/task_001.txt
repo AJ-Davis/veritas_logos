@@ -1,0 +1,11 @@
+# Task ID: 1
+# Title: Setup Multi-Format Document Ingestion
+# Status: pending
+# Dependencies: None
+# Priority: high
+# Description: Implement the Python-centric document ingestion system that accepts PDF, DOCX, Markdown, and TXT files up to 150 MB or 1M tokens.
+# Details:
+Create a unified document parser using `pdfplumber`, `pytesseract`, `python-docx`, and `markdown-it-py`. Design a common dataclass structure to represent parsed documents regardless of source format. Implement file size validation and token counting. Create a clean API for the ingestion service that will be called by the FastAPI gateway.
+
+# Test Strategy:
+Unit tests for each parser with sample files of each format. Integration tests with oversized files, corrupted files, and edge cases like scanned PDFs. Benchmark parsing speed and memory usage.

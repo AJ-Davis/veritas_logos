@@ -1,0 +1,11 @@
+# Task ID: 7
+# Title: Create Issue Detection and Flagging System
+# Status: pending
+# Dependencies: 4, 5, 6
+# Priority: medium
+# Description: Build the system that aggregates verification results and flags issues with appropriate metadata.
+# Details:
+Implement pass-specific validators that aggregate spans and confidence scores. Create an issue escalation system that routes contentious items to ACVF. Design a unified issue representation that includes verification results, ACVF debate history, and confidence scores. Implement prioritization of issues based on severity and confidence.
+
+# Test Strategy:
+Test with various verification scenarios to ensure proper flagging. Verify that high-confidence issues are properly prioritized. Test ACVF escalation triggers and results.

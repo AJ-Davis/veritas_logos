@@ -1,0 +1,11 @@
+# Task ID: 3
+# Title: Develop Claim Extraction Module
+# Status: pending
+# Dependencies: 2
+# Priority: high
+# Description: Implement the first verification pass that extracts claims from documents for subsequent verification.
+# Details:
+Create a Python module that uses LLM APIs to identify and extract claims from parsed documents. Design a Pydantic schema for representing claims with metadata (location in document, confidence, etc.). Implement prompt engineering for optimal claim extraction. Integrate with the verification chain framework.
+
+# Test Strategy:
+Unit tests with predefined documents containing known claims. Measure extraction accuracy against human-labeled test data. Test with different document types and structures.

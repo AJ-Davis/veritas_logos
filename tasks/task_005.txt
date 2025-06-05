@@ -1,0 +1,11 @@
+# Task ID: 5
+# Title: Implement Adversarial Cross-Validation Framework (ACVF)
+# Status: pending
+# Dependencies: 4
+# Priority: high
+# Description: Develop the core ACVF system that pits Challenger models against Defender models with Judge adjudication.
+# Details:
+Create the ACVF controller in Python that: 1) pairs models as Challengers and Defenders, 2) tracks debate rounds, and 3) triggers Judge models. Implement the `adversarial_chains.yml` configuration. Design Pydantic schemas for `DebateRound` and `JudgeVerdict`. Add role parameters to LLM adapters (Challenger/Defender/Judge). Create database tables for `debate_rounds` and `judge_scores`.
+
+# Test Strategy:
+Test with predefined scenarios of claims and citations. Verify that the debate flow works correctly through multiple rounds. Test Judge adjudication with various Challenger and Defender inputs.

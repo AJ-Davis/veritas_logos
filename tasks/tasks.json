@@ -1,0 +1,133 @@
+{
+  "tasks": [
+    {
+      "id": 1,
+      "title": "Setup Multi-Format Document Ingestion",
+      "description": "Implement the Python-centric document ingestion system that accepts PDF, DOCX, Markdown, and TXT files up to 150 MB or 1M tokens.",
+      "status": "pending",
+      "dependencies": [],
+      "priority": "high",
+      "details": "Create a unified document parser using `pdfplumber`, `pytesseract`, `python-docx`, and `markdown-it-py`. Design a common dataclass structure to represent parsed documents regardless of source format. Implement file size validation and token counting. Create a clean API for the ingestion service that will be called by the FastAPI gateway.",
+      "testStrategy": "Unit tests for each parser with sample files of each format. Integration tests with oversized files, corrupted files, and edge cases like scanned PDFs. Benchmark parsing speed and memory usage."
+    },
+    {
+      "id": 2,
+      "title": "Implement Basic Verification Chain Framework",
+      "description": "Create the core orchestration system for sequential verification passes (claim extraction, evidence retrieval, citation check, logic analysis, bias scan).",
+      "status": "pending",
+      "dependencies": [
+        1
+      ],
+      "priority": "high",
+      "details": "Build a FastAPI + Celery based task orchestration system. Create YAML configuration for chain definitions. Implement async processing with retry mechanisms. Design the core verification worker that will execute each pass in the chain. Create interfaces for the different verification passes that will be implemented in subsequent tasks.",
+      "testStrategy": "Unit tests for chain configuration parsing. Integration tests with mock LLM responses to verify the full chain execution. Test retry mechanisms with simulated failures."
+    },
+    {
+      "id": 3,
+      "title": "Develop Claim Extraction Module",
+      "description": "Implement the first verification pass that extracts claims from documents for subsequent verification.",
+      "status": "pending",
+      "dependencies": [
+        2
+      ],
+      "priority": "high",
+      "details": "Create a Python module that uses LLM APIs to identify and extract claims from parsed documents. Design a Pydantic schema for representing claims with metadata (location in document, confidence, etc.). Implement prompt engineering for optimal claim extraction. Integrate with the verification chain framework.",
+      "testStrategy": "Unit tests with predefined documents containing known claims. Measure extraction accuracy against human-labeled test data. Test with different document types and structures."
+    },
+    {
+      "id": 4,
+      "title": "Build Citation and Evidence Verification",
+      "description": "Create modules for evidence retrieval and citation checking to verify the accuracy of document claims.",
+      "status": "pending",
+      "dependencies": [
+        3
+      ],
+      "priority": "high",
+      "details": "Implement LLM-based citation verification that checks if citations actually support the claims they're attached to. Create evidence retrieval functionality that searches for supporting evidence for claims. Design Pydantic schemas for verification results. Integrate with the verification chain framework.",
+      "testStrategy": "Test with documents containing valid and invalid citations. Create benchmark documents with known citation errors. Measure precision and recall of citation error detection."
+    },
+    {
+      "id": 5,
+      "title": "Implement Adversarial Cross-Validation Framework (ACVF)",
+      "description": "Develop the core ACVF system that pits Challenger models against Defender models with Judge adjudication.",
+      "status": "pending",
+      "dependencies": [
+        4
+      ],
+      "priority": "high",
+      "details": "Create the ACVF controller in Python that: 1) pairs models as Challengers and Defenders, 2) tracks debate rounds, and 3) triggers Judge models. Implement the `adversarial_chains.yml` configuration. Design Pydantic schemas for `DebateRound` and `JudgeVerdict`. Add role parameters to LLM adapters (Challenger/Defender/Judge). Create database tables for `debate_rounds` and `judge_scores`.",
+      "testStrategy": "Test with predefined scenarios of claims and citations. Verify that the debate flow works correctly through multiple rounds. Test Judge adjudication with various Challenger and Defender inputs."
+    },
+    {
+      "id": 6,
+      "title": "Develop Logic Analysis and Bias Scan Modules",
+      "description": "Implement verification passes for logical fallacy detection and bias identification.",
+      "status": "pending",
+      "dependencies": [
+        3
+      ],
+      "priority": "medium",
+      "details": "Create Python modules for logic analysis that identifies logical fallacies, invalid inferences, and reasoning errors. Implement bias scanning to detect potential bias in document content. Design Pydantic schemas for logic and bias verification results. Integrate with both the standard verification chain and the ACVF system.",
+      "testStrategy": "Test with documents containing known logical fallacies and biases. Create benchmark suite for measuring detection accuracy. Test integration with ACVF to ensure logical issues are properly debated."
+    },
+    {
+      "id": 7,
+      "title": "Create Issue Detection and Flagging System",
+      "description": "Build the system that aggregates verification results and flags issues with appropriate metadata.",
+      "status": "pending",
+      "dependencies": [
+        4,
+        5,
+        6
+      ],
+      "priority": "medium",
+      "details": "Implement pass-specific validators that aggregate spans and confidence scores. Create an issue escalation system that routes contentious items to ACVF. Design a unified issue representation that includes verification results, ACVF debate history, and confidence scores. Implement prioritization of issues based on severity and confidence.",
+      "testStrategy": "Test with various verification scenarios to ensure proper flagging. Verify that high-confidence issues are properly prioritized. Test ACVF escalation triggers and results."
+    },
+    {
+      "id": 8,
+      "title": "Implement Actionable Outputs",
+      "description": "Create the output generation system that produces annotated documents, dashboard data, and JSON API responses.",
+      "status": "pending",
+      "dependencies": [
+        7
+      ],
+      "priority": "medium",
+      "details": "Use `python-docx` and `reportlab` to generate annotated PDF/DOCX outputs with issue highlights and comments. Create JSON structures for API responses. Design data structures for dashboard visualization. Implement the Debate View that shows Challenger critiques, Defender rebuttals, and Judge rulings.",
+      "testStrategy": "Test output generation with various document types and verification results. Verify that annotations correctly highlight issues in the original document. Test the structure and completeness of API responses."
+    },
+    {
+      "id": 9,
+      "title": "Build FastAPI Gateway with Authentication",
+      "description": "Implement the API gateway with JWT authentication and Stripe integration for the frontend.",
+      "status": "pending",
+      "dependencies": [
+        2,
+        8
+      ],
+      "priority": "medium",
+      "details": "Create a FastAPI application with endpoints for document submission, verification status, results retrieval, and user management. Implement JWT authentication. Add Stripe hooks for billing. Set up WebSocket connections for progress updates. Create endpoints for the Debate View modal.",
+      "testStrategy": "Test API endpoints with various request scenarios. Verify authentication and authorization logic. Test WebSocket connections for real-time updates. Verify Stripe integration with test payments."
+    },
+    {
+      "id": 10,
+      "title": "Implement Analytics and Metrics Collection",
+      "description": "Create the system for tracking success metrics and KPIs, including the new Adversarial Recall Metric.",
+      "status": "pending",
+      "dependencies": [
+        5,
+        7,
+        9
+      ],
+      "priority": "low",
+      "details": "Set up ClickHouse for analytics storage. Implement tracking for all KPIs: Adversarial Recall Metric, Error Detection Rate, Human Review Time, User Satisfaction, Debate View Adoption, Task Completion Rate, LLM API Cost, Active Users, and Customer metrics. Create dashboards for monitoring debate depth and ACVF effectiveness. Implement A/B testing framework for ACVF configurations.",
+      "testStrategy": "Verify metric calculations with test data. Test dashboard visualizations. Ensure proper data collection from all system components. Test performance impact of analytics collection."
+    }
+  ],
+  "metadata": {
+    "projectName": "VeritasLogos Implementation",
+    "totalTasks": 10,
+    "sourceFile": "scripts/prd.txt",
+    "generatedAt": "2023-11-11"
+  }
+}
