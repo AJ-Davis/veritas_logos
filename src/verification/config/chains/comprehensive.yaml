@@ -1,0 +1,96 @@
+chain_id: "comprehensive"
+name: "Comprehensive Document Verification"
+description: "Full 6-pass verification pipeline for thorough document analysis"
+global_timeout_seconds: 3600
+parallel_execution: false
+stop_on_failure: false
+metadata:
+  version: "1.0"
+  author: "Veritas Logos"
+  designed_for: "production"
+
+passes:
+  - type: "claim_extraction"
+    name: "Claim Extraction"
+    pass_id: "claim_extraction_pass"
+    enabled: true
+    depends_on: []
+    timeout_seconds: 300
+    max_retries: 2
+    parameters:
+      model: "claude-3-5-sonnet-20241022"
+      min_confidence_score: 0.6
+      max_claims_per_document: 100
+      extract_implicit_claims: true
+      include_supporting_context: true
+    description: "Extract factual claims from document content"
+
+  - type: "evidence_retrieval"
+    name: "Evidence Retrieval"
+    pass_id: "evidence_retrieval_pass"
+    enabled: true
+    depends_on: ["claim_extraction"]
+    timeout_seconds: 600
+    max_retries: 2
+    parameters:
+      search_depth: "comprehensive"
+      max_sources_per_claim: 10
+      include_academic_sources: true
+      source_quality_threshold: 0.7
+    description: "Retrieve supporting evidence for extracted claims"
+
+  - type: "citation_check"
+    name: "Citation Verification"
+    pass_id: "citation_verification_pass"
+    enabled: true
+    depends_on: ["evidence_retrieval"]
+    timeout_seconds: 450
+    max_retries: 2
+    parameters:
+      verify_source_accessibility: true
+      check_citation_accuracy: true
+      validate_quote_accuracy: true
+      cross_reference_sources: true
+    description: "Verify citations and source accuracy"
+
+  - type: "logic_analysis"
+    name: "Logic Analysis"
+    pass_id: "logic_analysis_pass"
+    enabled: true
+    depends_on: ["claim_extraction"]
+    timeout_seconds: 400
+    max_retries: 2
+    parameters:
+      detect_logical_fallacies: true
+      analyze_argument_structure: true
+      check_consistency: true
+      identify_contradictions: true
+    description: "Analyze logical structure and identify fallacies"
+
+  - type: "bias_scan"
+    name: "Bias Detection"
+    pass_id: "bias_scan_pass"
+    enabled: true
+    depends_on: ["claim_extraction"]
+    timeout_seconds: 350
+    max_retries: 2
+    parameters:
+      detect_cognitive_biases: true
+      analyze_language_bias: true
+      check_selection_bias: true
+      identify_framing_effects: true
+    description: "Scan for various types of bias in content and argumentation"
+
+  - type: "adversarial_validation"
+    name: "Adversarial Cross-Validation Framework (ACVF)"
+    pass_id: "acvf_pass"
+    enabled: true
+    depends_on: ["logic_analysis", "bias_scan", "citation_check"]
+    timeout_seconds: 800
+    max_retries: 1
+    parameters:
+      enable_debate_mode: true
+      max_debate_rounds: 3
+      require_consensus: false
+      escalation_threshold: 0.5
+    description: "Adversarial testing of claims through AI debate" 

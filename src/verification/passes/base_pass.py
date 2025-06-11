@@ -9,7 +9,7 @@ import logging
 from typing import Dict, Any, Optional
 from datetime import datetime
 
-from ...models.verification import (
+from src.models.verification import (
     VerificationPassConfig,
     VerificationResult,
     VerificationContext,

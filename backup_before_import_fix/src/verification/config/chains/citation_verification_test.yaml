@@ -1,0 +1,63 @@
+---
+chain_id: "citation_verification_test"
+name: "Citation Verification Test Chain"
+description: "Test chain that runs claim extraction followed by citation verification"
+version: "1.0"
+
+# Global settings
+stop_on_failure: false
+parallel_execution: false
+timeout_seconds: 600
+
+# Verification passes
+passes:
+  - name: "extract_claims"
+    pass_type: "claim_extraction"
+    description: "Extract claims from document using LLM"
+    enabled: true
+    timeout_seconds: 120
+    max_retries: 2
+    retry_delay_seconds: 5
+    depends_on: []
+    
+    parameters:
+      # LLM configuration
+      model: "gpt-4"
+      prompt_version: "v1"
+      
+      # Extraction settings
+      max_claims: 30
+      min_confidence: 0.5
+
+  - name: "verify_citations"
+    pass_type: "citation_check"
+    description: "Verify citations against their associated claims"
+    enabled: true
+    timeout_seconds: 300
+    max_retries: 2
+    retry_delay_seconds: 10
+    depends_on: ["extract_claims"]
+    
+    parameters:
+      # LLM configuration
+      model: "gpt-4"
+      prompt_version: "v1"
+      
+      # Verification settings
+      max_citations: 20
+      min_confidence: 0.3
+      retrieve_content: true
+      
+      # Optional overrides for testing
+      # model: "claude-3-sonnet-20240229"  # Uncomment to use Anthropic
+      # retrieve_content: false  # Uncomment to disable content retrieval
+
+# Dependencies
+dependencies: []
+
+# Metadata
+metadata:
+  purpose: "testing"
+  domain: "general"
+  complexity: "medium"
+  estimated_duration_minutes: 8 

@@ -1,6 +1,6 @@
 # Task ID: 1
 # Title: Setup Multi-Format Document Ingestion
-# Status: pending
+# Status: done
 # Dependencies: None
 # Priority: high
 # Description: Implement the Python-centric document ingestion system that accepts PDF, DOCX, Markdown, and TXT files up to 150 MB or 1M tokens.

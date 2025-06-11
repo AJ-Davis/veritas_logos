@@ -1,11 +1,64 @@
 # Task ID: 7
 # Title: Create Issue Detection and Flagging System
-# Status: pending
+# Status: done
 # Dependencies: 4, 5, 6
 # Priority: medium
 # Description: Build the system that aggregates verification results and flags issues with appropriate metadata.
 # Details:
-Implement pass-specific validators that aggregate spans and confidence scores. Create an issue escalation system that routes contentious items to ACVF. Design a unified issue representation that includes verification results, ACVF debate history, and confidence scores. Implement prioritization of issues based on severity and confidence.
+Building on the existing foundation (ResultAggregator, individual issue models, ACVF escalation system, and pass-specific flagging), complete the issue detection and flagging system with the following components:
+
+1. Create a unified Issue model that can represent issues from all verification passes with standardized metadata, severity scoring, and confidence aggregation
+
+2. Implement an IssueDetectionEngine that collects issues from all verification passes, applies unified scoring, deduplicates similar issues, and prioritizes based on impact and confidence
+
+3. Enhance the existing ACVF escalation system with smarter routing logic for different issue types, tracking of escalation history, and prevention of infinite loops
+
+4. Develop an Issue metadata system that tracks cross-pass correlations, verification result lineage, ACVF debate history, and confidence evolution
+
+5. Implement advanced prioritization algorithms including document-level impact assessment, issue clustering, root cause analysis, and dynamic priority adjustment
 
 # Test Strategy:
-Test with various verification scenarios to ensure proper flagging. Verify that high-confidence issues are properly prioritized. Test ACVF escalation triggers and results.
+Test with various verification scenarios to ensure proper flagging. Verify that high-confidence issues are properly prioritized. Test ACVF escalation triggers and results. Add comprehensive tests for:
+- Cross-pass issue aggregation and deduplication
+- Unified Issue model serialization and deserialization
+- Issue prioritization algorithms with different document contexts
+- Escalation routing logic for different issue types
+- End-to-end issue detection workflow with multiple verification passes
+
+# Subtasks:
+## 7.1. Create unified Issue model and IssueRegistry [done]
+### Dependencies: None
+### Description: Design and implement a comprehensive Issue model that can represent all verification issue types with standardized metadata fields
+### Details:
+
+
+## 7.2. Implement IssueDetectionEngine with cross-pass aggregation [done]
+### Dependencies: None
+### Description: Build the central engine that collects issues from all verification passes, applies unified scoring, and handles deduplication
+### Details:
+
+
+## 7.3. Enhance escalation routing with issue-specific logic [done]
+### Dependencies: None
+### Description: Extend the existing ACVF escalation system with smarter routing based on issue type and verification context
+### Details:
+
+
+## 7.4. Add comprehensive issue metadata tracking [done]
+### Dependencies: None
+### Description: Implement systems to track cross-pass correlations, verification result lineage, and confidence evolution
+### Details:
+
+
+## 7.5. Implement advanced prioritization algorithms [done]
+### Dependencies: None
+### Description: Develop algorithms for document-level impact assessment, issue clustering, and dynamic priority adjustment
+### Details:
+
+
+## 7.6. Add tests for the complete issue detection and flagging workflow [done]
+### Dependencies: None
+### Description: Create comprehensive test suite covering all aspects of the issue detection system
+### Details:
+
+

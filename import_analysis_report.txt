@@ -1,0 +1,164 @@
+DETAILED IMPORT ANALYSIS REPORT
+==================================================
+
+PROBLEMATIC IMPORTS BY FILE:
+------------------------------
+
+src/llm/llm_client.py:
+  Line 20: from ..models.acvf import ACVFRole
+  Line 405: from ..models.acvf import JudgeVerdict, ConfidenceLevel
+
+src/document_ingestion/document_ingestion_service.py:
+  Line 14: from ..models.document import ParsedDocument, DocumentFormat
+  Line 15: from ..utils.validation import validate_file_before_processing
+
+src/document_ingestion/pdf_parser.py:
+  Line 13: from ..models.document import ParsedDocument, DocumentSection, DocumentFormat, ExtractionMethod
+
+src/document_ingestion/markdown_parser.py:
+  Line 11: from ..models.document import ParsedDocument, DocumentSection, DocumentFormat
+
+src/document_ingestion/docx_parser.py:
+  Line 11: from ..models.document import ParsedDocument, DocumentSection, DocumentFormat
+
+src/document_ingestion/base_parser.py:
+  Line 11: from ..models.document import ParsedDocument, DocumentMetadata, DocumentFormat, ExtractionMethod
+  Line 12: from ..utils.validation import validate_file_before_processing, validate_token_count
+
+src/document_ingestion/txt_parser.py:
+  Line 10: from ..models.document import ParsedDocument, DocumentSection, DocumentFormat
+
+src/models/dashboard.py:
+  Line 26: from ..verification.pipeline.aggregators import AggregatedScore
+
+src/verification/acvf_repository.py:
+  Line 13: from ..models.database import DatabaseSession, DBModelAssignment, DBDebateRound, DBDebateArgument, DBJudgeScore, DBACVFSession, DatabaseManager
+  Line 17: from ..models.acvf import ModelAssignment, DebateRound, DebateArgument, JudgeScore, ACVFResult, ACVFRole, DebateStatus, JudgeVerdict, ConfidenceLevel
+
+src/verification/annotation_engine.py:
+  Line 14: from ..models.verification import VerificationChainResult, VerificationResult
+  Line 15: from ..models.issues import UnifiedIssue, IssueRegistry, IssueSeverity
+  Line 16: from ..models.document import ParsedDocument, DocumentSection
+  Line 17: from ..models.output import DocumentAnnotation, AnnotationLayer, AnnotationType, HighlightStyle, OutputVerificationResult, OutputGenerationConfig, ColorScheme, create_annotation_from_issue, create_output_result
+
+src/api/verification_api.py:
+  Line 16: from ..models.verification import VerificationTask, VerificationChainConfig, VerificationChainResult, VerificationStatus, Priority, VerificationMetrics
+  Line 24: from ..verification.config.chain_loader import ChainConfigLoader, create_default_chain_configs
+  Line 25: from ..verification.workers.verification_worker import execute_verification_chain_task, celery_app
+  Line 26: from ..document_ingestion import document_service
+
+src/analytics/adversarial_metrics.py:
+  Line 18: from ..models.verification import VerificationResult, VerificationStatus
+  Line 19: from ..models.issues import UnifiedIssue, IssueSeverity
+  Line 20: from ..models.acvf import ACVFResult
+
+src/api/routes/verification_routes.py:
+  Line 26: from ..auth import get_db, get_current_user, User
+  Line 27: from ..billing import get_customer_by_user, record_usage, UsageRecordCreate, UsageType, enforce_usage_limit
+  Line 31: from ...verification.config.chain_loader import ChainConfigLoader
+  Line 32: from ...verification.workers.verification_worker import execute_verification_chain_task
+  Line 33: from ...models.verification import VerificationTask, VerificationChainConfig, VerificationChainResult, VerificationStatus, Priority
+  Line 37: from ...models.document import ParsedDocument
+  Line 38: from ...models.issues import UnifiedIssue
+  Line 39: from ...models.output import OutputVerificationResult
+  Line 40: from ...models.dashboard import DashboardAggregator
+  Line 41: from ...models.acvf import ACVFResult
+  Line 42: from ...models.debate_view_generator import DebateViewGenerator
+  Line 43: from ...document_ingestion.document_service import DocumentService
+
+src/api/routes/billing_routes.py:
+  Line 17: from ..auth import get_db, get_current_user, get_current_admin_user, User
+  Line 18: from ..billing import Customer, Subscription, Payment, UsageRecord, SubscriptionTier, SubscriptionStatus, PaymentStatus, UsageType, SubscriptionPlan, CustomerCreate, CustomerResponse, SubscriptionCreate, SubscriptionResponse, PaymentIntentCreate, PaymentResponse, UsageRecordCreate, UsageStats, SUBSCRIPTION_PLANS, create_customer, get_customer_by_user, create_subscription, get_active_subscription, create_payment_intent, record_usage, get_usage_stats, check_usage_limit, enforce_usage_limit, STRIPE_WEBHOOK_SECRET
+
+src/api/routes/verification_status_routes.py:
+  Line 16: from ..auth import get_db, get_current_user, User
+
+src/api/routes/auth_routes.py:
+  Line 17: from ..auth import User, UserRole, UserStatus, UserCreate, UserResponse, UserUpdate, PasswordChange, LoginRequest, Token, TokenData, get_db, get_current_user, get_current_admin_user, authenticate_user, create_user, create_access_token, create_refresh_token, get_password_hash, verify_password, verify_token, get_user_by_id, get_user_by_email, get_user_by_username, security, ACCESS_TOKEN_EXPIRE_MINUTES
+
+src/api/routes/document_routes.py:
+  Line 23: from ..auth import get_db, get_current_user, User
+  Line 24: from ..billing import get_customer_by_user, record_usage, UsageRecordCreate, UsageType, enforce_usage_limit
+
+src/verification/pipeline/cache.py:
+  Line 13: from ...models.verification import VerificationChainResult
+
+src/verification/pipeline/aggregators.py:
+  Line 10: from ...models.verification import VerificationChainResult, VerificationResult, VerificationStatus, VerificationPassType
+
+src/verification/pipeline/verification_pipeline.py:
+  Line 13: from ...models.verification import VerificationTask, VerificationChainResult, VerificationResult, VerificationContext, VerificationStatus, VerificationPassType
+  Line 21: from ...models.document import ParsedDocument
+  Line 22: from ..passes.base_pass import BaseVerificationPass
+
+src/verification/pipeline/issue_detection_engine.py:
+  Line 16: from ...models.issues import UnifiedIssue, IssueRegistry, IssueType, IssueSeverity, IssueStatus, EscalationPath, IssueLocation, IssueMetadata, convert_logical_issue, convert_bias_issue, convert_citation_issue
+  Line 21: from ...models.verification import VerificationChainResult, VerificationResult, VerificationPassType, VerificationContext
+  Line 24: from ...models.logic_bias import LogicalIssue, BiasIssue, LogicAnalysisResult, BiasAnalysisResult
+  Line 25: from ...models.citations import VerifiedCitation, CitationVerificationResult
+  Line 26: from ..acvf_controller import ACVFController
+
+src/verification/pipeline/adapters.py:
+  Line 10: from ...models.verification import VerificationChainResult, VerificationResult, VerificationContext, VerificationStatus, VerificationPassType, VerificationChainConfig, VerificationPassConfig
+  Line 19: from ..passes.base_pass import BaseVerificationPass
+  Line 20: from ..workers.verification_worker import VerificationWorker
+  Line 162: from ...models.verification import VerificationTask, Priority
+  Line 219: from ...verification.acvf_controller import ACVFController
+
+src/verification/config/chain_loader.py:
+  Line 10: from ...models.verification import VerificationChainConfig, VerificationPassConfig, VerificationPassType, VerificationConfigError
+
+src/verification/passes/base_pass.py:
+  Line 12: from ...models.verification import VerificationPassConfig, VerificationResult, VerificationContext, VerificationStatus, VerificationPassType, VerificationError, VerificationTimeoutError
+
+src/verification/workers/verification_worker.py:
+  Line 13: from ...models.verification import VerificationTask, VerificationChainResult, VerificationResult, VerificationContext, VerificationStatus, VerificationPassType, VerificationError
+  Line 22: from ...models.document import ParsedDocument
+  Line 23: from ...document_ingestion import document_service
+  Line 24: from ..passes.base_pass import BaseVerificationPass, MockVerificationPass
+  Line 25: from ..passes.implementations.claim_extraction_pass import ClaimExtractionPass
+  Line 26: from ..passes.implementations.citation_verification_pass import CitationVerificationPass
+  Line 27: from ..passes.implementations.logic_analysis_pass import LogicAnalysisPass
+  Line 28: from ..passes.implementations.bias_scan_pass import BiasScanPass
+  Line 29: from ..config.chain_loader import ChainConfigLoader
+
+src/verification/passes/implementations/acvf_escalation_pass.py:
+  Line 12: from ..base_pass import BaseVerificationPass
+
+src/verification/passes/implementations/citation_verification_pass.py:
+  Line 17: from ..base_pass import BaseVerificationPass
+  Line 18: from ....models.verification import VerificationPassConfig, VerificationResult, VerificationContext, VerificationPassType, VerificationStatus, VerificationError
+  Line 26: from ....models.claims import ExtractedClaim, ClaimExtractionResult
+  Line 27: from ....models.citations import VerifiedCitation, CitationVerificationResult, CitationStatus, CitationType, SupportLevel, CitationIssue, CitationLocation, CitationContent, SourceCredibility
+  Line 38: from ....llm.llm_client import LLMClient, LLMConfig, LLMProvider
+  Line 39: from ....llm.prompts import PromptType, prompt_manager
+
+src/verification/passes/implementations/claim_extraction_pass.py:
+  Line 14: from ..base_pass import BaseVerificationPass
+  Line 15: from ....models.verification import VerificationPassConfig, VerificationResult, VerificationContext, VerificationPassType, VerificationStatus, VerificationError
+  Line 23: from ....models.claims import ExtractedClaim, ClaimExtractionResult, ClaimLocation, ClaimType, ClaimCategory
+  Line 30: from ....llm.llm_client import LLMClient, LLMConfig, LLMProvider
+  Line 31: from ....llm.prompts import PromptType, prompt_manager
+
+src/verification/passes/implementations/ml_enhanced_logic.py:
+  Line 34: from ....models.logic_bias import LogicalIssue, LogicAnalysisResult, LogicalFallacyType, ReasoningIssueType
+
+src/verification/passes/implementations/logic_analysis_pass.py:
+  Line 14: from ..base_pass import BaseVerificationPass
+  Line 15: from ....models.verification import VerificationPassConfig, VerificationResult, VerificationContext, VerificationPassType, VerificationStatus, VerificationError
+  Line 23: from ....models.logic_bias import LogicalIssue, LogicAnalysisResult, LogicalFallacyType, ReasoningIssueType
+  Line 29: from ....llm.llm_client import LLMClient, LLMConfig, LLMProvider
+  Line 30: from ....llm.prompts import PromptType, prompt_manager
+
+src/verification/passes/implementations/bias_scan_pass.py:
+  Line 13: from ..base_pass import BaseVerificationPass
+  Line 14: from ....models.verification import VerificationPassConfig, VerificationResult, VerificationContext, VerificationPassType, VerificationStatus, VerificationError
+  Line 22: from ....models.logic_bias import BiasIssue, BiasAnalysisResult, BiasType, BiasSeverity
+  Line 28: from ....llm.llm_client import LLMClient, LLMConfig, LLMProvider
+  Line 29: from ....llm.prompts import PromptType, prompt_manager
+
+src/verification/passes/implementations/ml_enhanced_bias.py:
+  Line 44: from ....models.logic_bias import BiasIssue, BiasAnalysisResult, BiasType, BiasSeverity
+
+MISSING __init__.py FILES:
+-------------------------

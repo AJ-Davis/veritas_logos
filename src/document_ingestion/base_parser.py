@@ -8,8 +8,8 @@ import hashlib
 from pathlib import Path
 from typing import Optional
 
-from ..models.document import ParsedDocument, DocumentMetadata, DocumentFormat, ExtractionMethod
-from ..utils.validation import validate_file_before_processing, validate_token_count
+from src.models.document import ParsedDocument, DocumentMetadata, DocumentFormat, ExtractionMethod
+from src.utils.validation import validate_file_before_processing, validate_token_count
 
 
 class BaseDocumentParser(ABC):

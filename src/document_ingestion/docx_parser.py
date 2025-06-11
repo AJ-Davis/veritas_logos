@@ -7,16 +7,15 @@ from docx.shared import Inches
 from pathlib import Path
 from typing import List
 
-from .base_parser import BaseDocumentParser
-from ..models.document import ParsedDocument, DocumentSection, DocumentFormat
+from src.document_ingestion.base_parser import BaseDocumentParser
+from src.models.document import ParsedDocument, DocumentSection, DocumentFormat
 
 
 class DocxParser(BaseDocumentParser):
     """Parser for DOCX files."""
     
     def __init__(self):
-        super().__init__()
-        self.supported_extensions = {'.docx'}
+        super().__init__(supported_extensions={'.docx'})
     
     def get_format(self) -> DocumentFormat:
         """Return the document format this parser handles."""

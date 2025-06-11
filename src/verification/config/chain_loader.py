@@ -7,7 +7,7 @@ import os
 from typing import Dict, List, Optional
 from pathlib import Path
 
-from ...models.verification import (
+from src.models.verification import (
     VerificationChainConfig,
     VerificationPassConfig,
     VerificationPassType,
@@ -18,15 +18,21 @@ from ...models.verification import (
 class ChainConfigLoader:
     """Loads and validates verification chain configurations from YAML files."""
     
-    def __init__(self, config_dir: str = "config/chains"):
+    def __init__(self, config_dir: str = None):
         """
         Initialize the chain config loader.
         
         Args:
             config_dir: Directory containing YAML configuration files
         """
+        if config_dir is None:
+            # Default to the chains directory relative to this module
+            config_dir = Path(__file__).parent / "chains"
+        else:
+            config_dir = Path(config_dir)
+        
         # Always store an absolute path to avoid cwd-dependent resolution
-        self.config_dir = Path(config_dir).expanduser().resolve()
+        self.config_dir = config_dir.expanduser().resolve()
         self.loaded_chains: Dict[str, VerificationChainConfig] = {}
     
     def load_chain_config(self, config_file: str) -> VerificationChainConfig:
@@ -74,15 +80,17 @@ class ChainConfigLoader:
         """
         if not self.config_dir.exists():
             raise VerificationConfigError(f"Configuration directory not found: {self.config_dir}")
-        chains: Dict[str, VerificationChainConfig] = {}
-        for config_file in self.config_dir.glob("*.yml") | self.config_dir.glob("*.yaml"):
-             try:
-                 chain_config = self.load_chain_config(config_file.name)
-                 chains[chain_config.chain_id] = chain_config
-            except VerificationConfigError as e:
-                logger.warning("Failed to load %s: %s", config_file, e)
         
-        for config_file in self.config_dir.glob("*.yaml"):
+        chains: Dict[str, VerificationChainConfig] = {}
+        
+        # Use itertools.chain to combine glob patterns for Python compatibility
+        import itertools
+        config_files = itertools.chain(
+            self.config_dir.glob("*.yml"),
+            self.config_dir.glob("*.yaml")
+        )
+        
+        for config_file in config_files:
             try:
                 chain_config = self.load_chain_config(config_file.name)
                 chains[chain_config.chain_id] = chain_config

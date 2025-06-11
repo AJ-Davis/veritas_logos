@@ -1,7 +1,8 @@
 # Document parsing libraries
-pdfplumber>=1.9.0
+pdfplumber>=0.11.6
 pytesseract>=0.3.10
 python-docx>=1.1.0
+reportlab>=4.0.0
 markdown-it-py>=3.0.0
 chardet>=5.2.0
 
@@ -50,3 +51,12 @@ anthropic>=0.7.0
 
 # Payment processing
 stripe>=7.7.0
+
+# Rate limiting
+slowapi>=0.1.9
+stripe>=7.0.0
+
+# Enhanced LLM Providers
+anthropic>=0.40.0
+google-generativeai>=0.8.0
+openai>=1.0.0  # For DeepSeek API compatibility

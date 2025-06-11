@@ -1,0 +1,145 @@
+name: "Adversarial Cross-Validation Framework (ACVF)"
+description: "Configuration for adversarial debates between Challenger and Defender models with Judge adjudication"
+version: "1.0"
+
+# Model assignments for different roles
+models:
+  challengers:
+    - provider: "anthropic"
+      model: "claude-3-opus-20240229"
+      role: "challenger"
+      temperature: 0.8
+      max_tokens: 2000
+      system_prompt_override: null
+      metadata:
+        specialization: "critical_analysis"
+        
+    - provider: "openai"
+      model: "gpt-4-turbo-preview"
+      role: "challenger"
+      temperature: 0.7
+      max_tokens: 1800
+      system_prompt_override: null
+      metadata:
+        specialization: "logical_reasoning"
+
+  defenders:
+    - provider: "anthropic"
+      model: "claude-3-sonnet-20240229"
+      role: "defender"
+      temperature: 0.6
+      max_tokens: 2000
+      system_prompt_override: null
+      metadata:
+        specialization: "evidence_validation"
+        
+    - provider: "openai"
+      model: "gpt-4"
+      role: "defender"
+      temperature: 0.5
+      max_tokens: 1800
+      system_prompt_override: null
+      metadata:
+        specialization: "fact_checking"
+
+  judges:
+    - provider: "anthropic"
+      model: "claude-3-opus-20240229"
+      role: "judge"
+      temperature: 0.3
+      max_tokens: 2500
+      system_prompt_override: null
+      metadata:
+        specialization: "impartial_analysis"
+        
+    - provider: "openai"
+      model: "gpt-4"
+      role: "judge"
+      temperature: 0.3
+      max_tokens: 2500
+      system_prompt_override: null
+      metadata:
+        specialization: "structured_evaluation"
+
+# Debate parameters
+debate_config:
+  max_rounds_per_debate: 3
+  escalation_threshold: 0.5
+  consensus_threshold: 0.7
+  timeout_seconds: 300
+  
+  # Model assignment strategy
+  allow_model_self_assignment: false
+  require_unanimous_consensus: false
+  enable_meta_judging: false
+  
+  # Debate flow settings
+  challenger_goes_first: true
+  require_defender_response: true
+  allow_final_rebuttals: true
+
+# Trigger conditions for when ACVF should be activated
+trigger_conditions:
+  min_confidence_threshold: 0.6
+  escalate_failed_passes: true
+  escalate_on_issues: true
+  require_manual_trigger: false
+  
+  # Specific scenarios that should trigger ACVF
+  trigger_scenarios:
+    - "low_citation_confidence"
+    - "contradictory_evidence"
+    - "logical_fallacy_detected"
+    - "bias_indicators_found"
+    - "verification_pass_failure"
+    - "claim_extraction_uncertainty"
+
+# Advanced configuration
+advanced_settings:
+  # Parallel debate support
+  max_concurrent_debates: 3
+  debate_priority_scoring: true
+  
+  # Quality controls
+  minimum_argument_length: 50
+  maximum_argument_length: 2000
+  require_evidence_citations: true
+  
+  # Scoring and evaluation
+  weighted_judge_scoring: true
+  judge_consistency_tracking: true
+  debate_quality_metrics: true
+  
+  # Escalation and appeals
+  allow_escalation: true
+  max_escalation_levels: 2
+  escalation_threshold_increase: 0.1
+
+# Output configuration
+outputs:
+  generate_debate_transcripts: true
+  include_judge_reasoning: true
+  track_model_performance: true
+  export_format: "json"
+  
+  # Detailed logging
+  log_level: "INFO"
+  include_timing_metrics: true
+  include_token_usage: true
+  
+# Integration settings
+integration:
+  verification_chain_pass: "acvf_escalation"
+  priority: 5
+  enabled: true
+  
+  # Database configuration
+  store_debate_rounds: true
+  store_judge_scores: true
+  retention_days: 90
+  
+  # Monitoring and alerts
+  enable_monitoring: true
+  alert_on_consensus_failure: true
+  alert_on_timeout: true
+  performance_tracking: true 

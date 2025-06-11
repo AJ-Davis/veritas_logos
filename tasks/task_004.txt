@@ -1,6 +1,6 @@
 # Task ID: 4
 # Title: Build Citation and Evidence Verification
-# Status: pending
+# Status: done
 # Dependencies: 3
 # Priority: high
 # Description: Create modules for evidence retrieval and citation checking to verify the accuracy of document claims.

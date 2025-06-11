@@ -1,0 +1,466 @@
+{
+  "verification_chain_test_report": {
+    "timestamp": "2025-06-10T11:16:29.836499",
+    "summary": {
+      "total_tests": 18,
+      "passed_tests": 18,
+      "failed_tests": 0,
+      "success_rate": "100.0%",
+      "average_processing_time": "26.38s"
+    },
+    "test_categories": {
+      "individual_passes": [
+        {
+          "test_name": "individual_pass_claim_extraction",
+          "status": "PASSED",
+          "processing_time": 37.475563049316406,
+          "pass_type": "claim_extraction",
+          "verification_status": "completed",
+          "timestamp": "2025-06-10T11:09:01.958811"
+        },
+        {
+          "test_name": "individual_pass_citation_check",
+          "status": "PASSED",
+          "processing_time": 6.389617919921875e-05,
+          "pass_type": "citation_check",
+          "verification_status": "completed",
+          "timestamp": "2025-06-10T11:09:01.958902"
+        },
+        {
+          "test_name": "individual_pass_logic_analysis",
+          "status": "PASSED",
+          "processing_time": 2.8133392333984375e-05,
+          "pass_type": "logic_analysis",
+          "verification_status": "completed",
+          "timestamp": "2025-06-10T11:09:01.958940"
+        },
+        {
+          "test_name": "individual_pass_bias_scan",
+          "status": "PASSED",
+          "processing_time": 2.193450927734375e-05,
+          "pass_type": "bias_scan",
+          "verification_status": "completed",
+          "timestamp": "2025-06-10T11:09:01.958968"
+        }
+      ],
+      "complete_chains": [
+        {
+          "test_name": "complete_chain_academic_paper",
+          "status": "PASSED",
+          "processing_time": 36.98915481567383,
+          "document_size": 2285,
+          "scenario": "academic_paper",
+          "complexity": "high",
+          "verification_status": "completed",
+          "analysis": {
+            "passes_completed": 3,
+            "passes_failed": 1,
+            "claims_found": 0,
+            "citations_found": 0,
+            "bias_issues": 0,
+            "logic_issues": 0,
+            "summary": "3 passes completed, "
+          },
+          "timestamp": "2025-06-10T11:09:38.948222"
+        },
+        {
+          "test_name": "complete_chain_news_article",
+          "status": "PASSED",
+          "processing_time": 0.014312028884887695,
+          "document_size": 1635,
+          "scenario": "news_article",
+          "complexity": "medium",
+          "verification_status": "completed",
+          "analysis": {
+            "passes_completed": 3,
+            "passes_failed": 1,
+            "claims_found": 0,
+            "citations_found": 0,
+            "bias_issues": 0,
+            "logic_issues": 0,
+            "summary": "3 passes completed, "
+          },
+          "timestamp": "2025-06-10T11:09:38.962583"
+        },
+        {
+          "test_name": "complete_chain_opinion_piece",
+          "status": "PASSED",
+          "processing_time": 37.33646488189697,
+          "document_size": 2006,
+          "scenario": "opinion_piece",
+          "complexity": "high",
+          "verification_status": "completed",
+          "analysis": {
+            "passes_completed": 3,
+            "passes_failed": 1,
+            "claims_found": 0,
+            "citations_found": 0,
+            "bias_issues": 0,
+            "logic_issues": 0,
+            "summary": "3 passes completed, "
+          },
+          "timestamp": "2025-06-10T11:10:16.299088"
+        },
+        {
+          "test_name": "complete_chain_technical_doc",
+          "status": "PASSED",
+          "processing_time": 37.16639804840088,
+          "document_size": 2852,
+          "scenario": "technical_doc",
+          "complexity": "high",
+          "verification_status": "completed",
+          "analysis": {
+            "passes_completed": 3,
+            "passes_failed": 1,
+            "claims_found": 0,
+            "citations_found": 0,
+            "bias_issues": 0,
+            "logic_issues": 0,
+            "summary": "3 passes completed, "
+          },
+          "timestamp": "2025-06-10T11:10:53.465572"
+        },
+        {
+          "test_name": "complete_chain_simple_fact",
+          "status": "PASSED",
+          "processing_time": 37.27974891662598,
+          "document_size": 480,
+          "scenario": "simple_fact",
+          "complexity": "low",
+          "verification_status": "completed",
+          "analysis": {
+            "passes_completed": 3,
+            "passes_failed": 1,
+            "claims_found": 0,
+            "citations_found": 0,
+            "bias_issues": 0,
+            "logic_issues": 0,
+            "summary": "3 passes completed, "
+          },
+          "timestamp": "2025-06-10T11:11:30.745372"
+        },
+        {
+          "test_name": "complete_chain_controversial",
+          "status": "PASSED",
+          "processing_time": 37.58345603942871,
+          "document_size": 2169,
+          "scenario": "controversial",
+          "complexity": "very_high",
+          "verification_status": "completed",
+          "analysis": {
+            "passes_completed": 3,
+            "passes_failed": 1,
+            "claims_found": 0,
+            "citations_found": 0,
+            "bias_issues": 0,
+            "logic_issues": 0,
+            "summary": "3 passes completed, "
+          },
+          "timestamp": "2025-06-10T11:12:08.328901"
+        }
+      ],
+      "error_handling": [
+        {
+          "test_name": "error_handling_empty_document",
+          "status": "PASSED",
+          "processing_time": 0.0009121894836425781,
+          "description": "Empty document content",
+          "content_length": 0,
+          "verification_status": "failed",
+          "timestamp": "2025-06-10T11:12:08.330022"
+        },
+        {
+          "test_name": "error_handling_invalid_format",
+          "status": "PASSED",
+          "processing_time": 37.7391791343689,
+          "description": "Invalid document format",
+          "content_length": 24,
+          "verification_status": "completed",
+          "timestamp": "2025-06-10T11:12:46.069320"
+        },
+        {
+          "test_name": "error_handling_very_large",
+          "status": "PASSED",
+          "processing_time": 37.774434089660645,
+          "description": "Very large document",
+          "content_length": 150000,
+          "verification_status": "completed",
+          "timestamp": "2025-06-10T11:13:23.844114"
+        },
+        {
+          "test_name": "error_handling_special_chars",
+          "status": "PASSED",
+          "processing_time": 37.488779067993164,
+          "description": "Special characters",
+          "content_length": 32,
+          "verification_status": "completed",
+          "timestamp": "2025-06-10T11:14:01.333241"
+        }
+      ],
+      "performance": [
+        {
+          "test_name": "performance_small",
+          "status": "PASSED",
+          "processing_time": 37.03754782676697,
+          "content_length": 210,
+          "chars_per_second": 5.669921804278667,
+          "description": "Small document",
+          "verification_status": "completed",
+          "timestamp": "2025-06-10T11:14:38.371003"
+        },
+        {
+          "test_name": "performance_medium",
+          "status": "PASSED",
+          "processing_time": 37.036694049835205,
+          "content_length": 2200,
+          "chars_per_second": 59.400550087968476,
+          "description": "Medium document",
+          "verification_status": "completed",
+          "timestamp": "2025-06-10T11:15:15.408138"
+        },
+        {
+          "test_name": "performance_large",
+          "status": "PASSED",
+          "processing_time": 37.4889178276062,
+          "content_length": 21000,
+          "chars_per_second": 560.1655426963528,
+          "description": "Large document",
+          "verification_status": "completed",
+          "timestamp": "2025-06-10T11:15:52.897358"
+        }
+      ],
+      "acvf_integration": [
+        {
+          "test_name": "acvf_integration",
+          "status": "PASSED",
+          "verification_status": "completed",
+          "acvf_detected": false,
+          "description": "ACVF framework integration test",
+          "timestamp": "2025-06-10T11:16:29.836377"
+        }
+      ]
+    },
+    "detailed_results": [
+      {
+        "test_name": "individual_pass_claim_extraction",
+        "status": "PASSED",
+        "processing_time": 37.475563049316406,
+        "pass_type": "claim_extraction",
+        "verification_status": "completed",
+        "timestamp": "2025-06-10T11:09:01.958811"
+      },
+      {
+        "test_name": "individual_pass_citation_check",
+        "status": "PASSED",
+        "processing_time": 6.389617919921875e-05,
+        "pass_type": "citation_check",
+        "verification_status": "completed",
+        "timestamp": "2025-06-10T11:09:01.958902"
+      },
+      {
+        "test_name": "individual_pass_logic_analysis",
+        "status": "PASSED",
+        "processing_time": 2.8133392333984375e-05,
+        "pass_type": "logic_analysis",
+        "verification_status": "completed",
+        "timestamp": "2025-06-10T11:09:01.958940"
+      },
+      {
+        "test_name": "individual_pass_bias_scan",
+        "status": "PASSED",
+        "processing_time": 2.193450927734375e-05,
+        "pass_type": "bias_scan",
+        "verification_status": "completed",
+        "timestamp": "2025-06-10T11:09:01.958968"
+      },
+      {
+        "test_name": "complete_chain_academic_paper",
+        "status": "PASSED",
+        "processing_time": 36.98915481567383,
+        "document_size": 2285,
+        "scenario": "academic_paper",
+        "complexity": "high",
+        "verification_status": "completed",
+        "analysis": {
+          "passes_completed": 3,
+          "passes_failed": 1,
+          "claims_found": 0,
+          "citations_found": 0,
+          "bias_issues": 0,
+          "logic_issues": 0,
+          "summary": "3 passes completed, "
+        },
+        "timestamp": "2025-06-10T11:09:38.948222"
+      },
+      {
+        "test_name": "complete_chain_news_article",
+        "status": "PASSED",
+        "processing_time": 0.014312028884887695,
+        "document_size": 1635,
+        "scenario": "news_article",
+        "complexity": "medium",
+        "verification_status": "completed",
+        "analysis": {
+          "passes_completed": 3,
+          "passes_failed": 1,
+          "claims_found": 0,
+          "citations_found": 0,
+          "bias_issues": 0,
+          "logic_issues": 0,
+          "summary": "3 passes completed, "
+        },
+        "timestamp": "2025-06-10T11:09:38.962583"
+      },
+      {
+        "test_name": "complete_chain_opinion_piece",
+        "status": "PASSED",
+        "processing_time": 37.33646488189697,
+        "document_size": 2006,
+        "scenario": "opinion_piece",
+        "complexity": "high",
+        "verification_status": "completed",
+        "analysis": {
+          "passes_completed": 3,
+          "passes_failed": 1,
+          "claims_found": 0,
+          "citations_found": 0,
+          "bias_issues": 0,
+          "logic_issues": 0,
+          "summary": "3 passes completed, "
+        },
+        "timestamp": "2025-06-10T11:10:16.299088"
+      },
+      {
+        "test_name": "complete_chain_technical_doc",
+        "status": "PASSED",
+        "processing_time": 37.16639804840088,
+        "document_size": 2852,
+        "scenario": "technical_doc",
+        "complexity": "high",
+        "verification_status": "completed",
+        "analysis": {
+          "passes_completed": 3,
+          "passes_failed": 1,
+          "claims_found": 0,
+          "citations_found": 0,
+          "bias_issues": 0,
+          "logic_issues": 0,
+          "summary": "3 passes completed, "
+        },
+        "timestamp": "2025-06-10T11:10:53.465572"
+      },
+      {
+        "test_name": "complete_chain_simple_fact",
+        "status": "PASSED",
+        "processing_time": 37.27974891662598,
+        "document_size": 480,
+        "scenario": "simple_fact",
+        "complexity": "low",
+        "verification_status": "completed",
+        "analysis": {
+          "passes_completed": 3,
+          "passes_failed": 1,
+          "claims_found": 0,
+          "citations_found": 0,
+          "bias_issues": 0,
+          "logic_issues": 0,
+          "summary": "3 passes completed, "
+        },
+        "timestamp": "2025-06-10T11:11:30.745372"
+      },
+      {
+        "test_name": "complete_chain_controversial",
+        "status": "PASSED",
+        "processing_time": 37.58345603942871,
+        "document_size": 2169,
+        "scenario": "controversial",
+        "complexity": "very_high",
+        "verification_status": "completed",
+        "analysis": {
+          "passes_completed": 3,
+          "passes_failed": 1,
+          "claims_found": 0,
+          "citations_found": 0,
+          "bias_issues": 0,
+          "logic_issues": 0,
+          "summary": "3 passes completed, "
+        },
+        "timestamp": "2025-06-10T11:12:08.328901"
+      },
+      {
+        "test_name": "error_handling_empty_document",
+        "status": "PASSED",
+        "processing_time": 0.0009121894836425781,
+        "description": "Empty document content",
+        "content_length": 0,
+        "verification_status": "failed",
+        "timestamp": "2025-06-10T11:12:08.330022"
+      },
+      {
+        "test_name": "error_handling_invalid_format",
+        "status": "PASSED",
+        "processing_time": 37.7391791343689,
+        "description": "Invalid document format",
+        "content_length": 24,
+        "verification_status": "completed",
+        "timestamp": "2025-06-10T11:12:46.069320"
+      },
+      {
+        "test_name": "error_handling_very_large",
+        "status": "PASSED",
+        "processing_time": 37.774434089660645,
+        "description": "Very large document",
+        "content_length": 150000,
+        "verification_status": "completed",
+        "timestamp": "2025-06-10T11:13:23.844114"
+      },
+      {
+        "test_name": "error_handling_special_chars",
+        "status": "PASSED",
+        "processing_time": 37.488779067993164,
+        "description": "Special characters",
+        "content_length": 32,
+        "verification_status": "completed",
+        "timestamp": "2025-06-10T11:14:01.333241"
+      },
+      {
+        "test_name": "performance_small",
+        "status": "PASSED",
+        "processing_time": 37.03754782676697,
+        "content_length": 210,
+        "chars_per_second": 5.669921804278667,
+        "description": "Small document",
+        "verification_status": "completed",
+        "timestamp": "2025-06-10T11:14:38.371003"
+      },
+      {
+        "test_name": "performance_medium",
+        "status": "PASSED",
+        "processing_time": 37.036694049835205,
+        "content_length": 2200,
+        "chars_per_second": 59.400550087968476,
+        "description": "Medium document",
+        "verification_status": "completed",
+        "timestamp": "2025-06-10T11:15:15.408138"
+      },
+      {
+        "test_name": "performance_large",
+        "status": "PASSED",
+        "processing_time": 37.4889178276062,
+        "content_length": 21000,
+        "chars_per_second": 560.1655426963528,
+        "description": "Large document",
+        "verification_status": "completed",
+        "timestamp": "2025-06-10T11:15:52.897358"
+      },
+      {
+        "test_name": "acvf_integration",
+        "status": "PASSED",
+        "verification_status": "completed",
+        "acvf_detected": false,
+        "description": "ACVF framework integration test",
+        "timestamp": "2025-06-10T11:16:29.836377"
+      }
+    ]
+  }
+}

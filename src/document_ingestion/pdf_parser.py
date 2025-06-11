@@ -9,16 +9,15 @@ import io
 from pathlib import Path
 from typing import List, Tuple, Optional
 
-from .base_parser import BaseDocumentParser
-from ..models.document import ParsedDocument, DocumentSection, DocumentFormat, ExtractionMethod
+from src.document_ingestion.base_parser import BaseDocumentParser
+from src.models.document import ParsedDocument, DocumentSection, DocumentFormat, ExtractionMethod
 
 
 class PdfParser(BaseDocumentParser):
     """Parser for PDF files with OCR fallback."""
     
     def __init__(self):
-        super().__init__()
-        self.supported_extensions = {'.pdf'}
+        super().__init__(supported_extensions={'.pdf'})
         self.ocr_threshold = 50  # Minimum characters per page before trying OCR
     
     def get_format(self) -> DocumentFormat:

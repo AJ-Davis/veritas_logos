@@ -16,6 +16,9 @@ import anthropic
 from openai import AsyncOpenAI
 from anthropic import AsyncAnthropic
 
+# Import ACVF role definitions
+from src.models.acvf import ACVFRole
+
 logger = logging.getLogger(__name__)
 
 
@@ -200,8 +203,8 @@ class AnthropicProvider(BaseLLMProvider):
                 usage=response.usage if hasattr(response, "usage") else {},
                 response_time_seconds=response_time,
                 metadata={
-                    "stop_reason": response.stop_reason,
-                    "response_id": response.id
+                    "finish_reason": response.stop_reason if hasattr(response, "stop_reason") else None,
+                    "response_id": response.id if hasattr(response, "id") else None
                 }
             )
             
@@ -213,7 +216,7 @@ class AnthropicProvider(BaseLLMProvider):
                                          response_schema: Dict[str, Any], **kwargs) -> LLMResponse:
         """Generate structured JSON response using Anthropic API."""
         
-        # Add JSON schema instruction
+        # Add JSON schema instruction to the system message
         schema_instruction = f"""
 Please respond with valid JSON that matches this schema:
 {json.dumps(response_schema, indent=2)}
@@ -232,166 +235,109 @@ Ensure your response is valid JSON and follows the schema exactly.
 
 
 class LLMClient:
-    """Unified client for multiple LLM providers with retry logic and rate limiting."""
+    """Unified client for different LLM providers with ACVF role support."""
     
     def __init__(self, configs: List[LLMConfig]):
-        """
-        Initialize LLM client with multiple provider configurations.
-        
-        Args:
-            configs: List of LLM configurations for different providers
-        """
-        self.providers: Dict[str, BaseLLMProvider] = {}
-        self.default_provider: Optional[str] = None
-        
+        self.providers = {}
         for config in configs:
-            provider_key = f"{config.provider.value}:{config.model}"
-            
             if config.provider == LLMProvider.OPENAI:
-                self.providers[provider_key] = OpenAIProvider(config)
+                provider = OpenAIProvider(config)
             elif config.provider == LLMProvider.ANTHROPIC:
-                self.providers[provider_key] = AnthropicProvider(config)
+                provider = AnthropicProvider(config)
             else:
                 raise ValueError(f"Unsupported provider: {config.provider}")
             
-            # Set first provider as default
-            if self.default_provider is None:
-                self.default_provider = provider_key
+            # Use provider type and model as key for multiple configs of same provider
+            key = f"{config.provider.value}:{config.model}"
+            self.providers[key] = provider
         
-        logger.info(f"Initialized LLM client with {len(self.providers)} providers")
+        if not self.providers:
+            raise ValueError("At least one provider configuration must be provided")
+        
+        # Default to first provider if none specified
+        self.default_provider_key = list(self.providers.keys())[0]
+        self.logger = logging.getLogger("llm.client")
     
     def get_provider(self, provider: Optional[str] = None) -> BaseLLMProvider:
-        """Get a specific provider or the default one."""
+        """Get provider instance by key."""
         if provider is None:
-            provider = self.default_provider
+            provider = self.default_provider_key
         
         if provider not in self.providers:
-            available = list(self.providers.keys())
-            raise ValueError(f"Provider '{provider}' not found. Available: {available}")
+            # Try to find by provider type only
+            matching_keys = [key for key in self.providers.keys() if key.startswith(f"{provider}:")]
+            if matching_keys:
+                provider = matching_keys[0]
+            else:
+                raise ValueError(f"Provider not found: {provider}. Available: {list(self.providers.keys())}")
         
         return self.providers[provider]
     
     async def generate_response(self, messages: List[Dict[str, str]], 
                               provider: Optional[str] = None, **kwargs) -> LLMResponse:
-        """
-        Generate a response using the specified or default provider.
-        
-        Args:
-            messages: List of messages in chat format
-            provider: Provider key (provider:model) or None for default
-            **kwargs: Additional arguments for the LLM
-            
-        Returns:
-            LLMResponse object
-        """
+        """Generate response using specified or default provider."""
         llm_provider = self.get_provider(provider)
         
-        # Implement retry logic
-        last_error = None
         for attempt in range(llm_provider.config.max_retries):
             try:
-                if attempt > 0:
-                    await asyncio.sleep(llm_provider.config.retry_delay_seconds * attempt)
-                    logger.info(f"Retrying LLM request (attempt {attempt + 1})")
-                
                 return await llm_provider.generate_response(messages, **kwargs)
-                
             except Exception as e:
-                last_error = e
-                logger.warning(f"LLM request failed (attempt {attempt + 1}): {str(e)}")
-                
                 if attempt == llm_provider.config.max_retries - 1:
-                    break
-        
-        logger.error(f"All LLM retry attempts failed. Last error: {str(last_error)}")
-        raise last_error
+                    self.logger.error(f"All retry attempts failed. Last error: {str(e)}")
+                    raise
+                
+                self.logger.warning(f"Request failed (attempt {attempt + 1}/{llm_provider.config.max_retries}): {str(e)}")
+                await asyncio.sleep(llm_provider.config.retry_delay_seconds * (2 ** attempt))  # Exponential backoff
     
     async def generate_structured_response(self, messages: List[Dict[str, str]], 
                                          response_schema: Dict[str, Any],
                                          provider: Optional[str] = None, **kwargs) -> LLMResponse:
-        """
-        Generate a structured JSON response.
-        
-        Args:
-            messages: List of messages in chat format
-            response_schema: JSON schema for the expected response
-            provider: Provider key or None for default
-            **kwargs: Additional arguments for the LLM
-            
-        Returns:
-            LLMResponse object with JSON content
-        """
+        """Generate structured JSON response using specified or default provider."""
         llm_provider = self.get_provider(provider)
         
-        # Implement retry logic with JSON validation
-        last_error = None
         for attempt in range(llm_provider.config.max_retries):
             try:
-                if attempt > 0:
-                    await asyncio.sleep(llm_provider.config.retry_delay_seconds * attempt)
-                    logger.info(f"Retrying structured LLM request (attempt {attempt + 1})")
-                
-                response = await llm_provider.generate_structured_response(
-                    messages, response_schema, **kwargs
-                )
-                
-                # Validate JSON response
-                try:
-                    json.loads(response.content)
-                    return response
-                except json.JSONDecodeError as json_error:
-                    raise ValueError(f"Invalid JSON response: {str(json_error)}")
-                
+                return await llm_provider.generate_structured_response(messages, response_schema, **kwargs)
             except Exception as e:
-                last_error = e
-                logger.warning(f"Structured LLM request failed (attempt {attempt + 1}): {str(e)}")
-                
                 if attempt == llm_provider.config.max_retries - 1:
-                    break
-        
-        logger.error(f"All structured LLM retry attempts failed. Last error: {str(last_error)}")
-        raise last_error
+                    self.logger.error(f"All retry attempts failed. Last error: {str(e)}")
+                    raise
+                
+                self.logger.warning(f"Structured request failed (attempt {attempt + 1}/{llm_provider.config.max_retries}): {str(e)}")
+                await asyncio.sleep(llm_provider.config.retry_delay_seconds * (2 ** attempt))
     
     async def generate_with_fallback(self, messages: List[Dict[str, str]], 
                                    preferred_provider: Optional[str] = None,
                                    fallback_providers: Optional[List[str]] = None,
                                    **kwargs) -> LLMResponse:
-        """
-        Generate response with fallback to other providers if the preferred one fails.
-        
-        Args:
-            messages: List of messages in chat format
-            preferred_provider: Preferred provider key
-            fallback_providers: List of fallback provider keys
-            **kwargs: Additional arguments for the LLM
-            
-        Returns:
-            LLMResponse object
-        """
+        """Generate response with fallback to other providers on failure."""
         providers_to_try = []
         
+        # Add preferred provider first
         if preferred_provider:
             providers_to_try.append(preferred_provider)
         
+        # Add fallback providers
         if fallback_providers:
             providers_to_try.extend(fallback_providers)
         
-        if not providers_to_try:
-            providers_to_try = list(self.providers.keys())
+        # Add all available providers as final fallback
+        for key in self.providers.keys():
+            if key not in providers_to_try:
+                providers_to_try.append(key)
         
         last_error = None
-        for provider in providers_to_try:
+        for provider_key in providers_to_try:
             try:
-                logger.info(f"Trying provider: {provider}")
-                return await self.generate_response(messages, provider=provider, **kwargs)
-                
+                self.logger.info(f"Attempting to use provider: {provider_key}")
+                return await self.generate_response(messages, provider=provider_key, **kwargs)
             except Exception as e:
                 last_error = e
-                logger.warning(f"Provider {provider} failed: {str(e)}")
+                self.logger.warning(f"Provider {provider_key} failed: {str(e)}")
                 continue
         
-        logger.error(f"All providers failed. Last error: {str(last_error)}")
-        raise last_error
+        # If we get here, all providers failed
+        raise Exception(f"All providers failed. Last error: {str(last_error)}")
     
     def get_available_providers(self) -> List[str]:
         """Get list of available provider keys."""
@@ -399,13 +345,154 @@ class LLMClient:
     
     def get_provider_info(self) -> Dict[str, Dict[str, Any]]:
         """Get information about all configured providers."""
-        info = {}
-        for key, provider in self.providers.items():
-            info[key] = {
+        return {
+            key: {
                 "provider": provider.config.provider.value,
                 "model": provider.config.model,
-                "max_tokens": provider.config.max_tokens,
                 "temperature": provider.config.temperature,
-                "timeout_seconds": provider.config.timeout_seconds
+                "max_tokens": provider.config.max_tokens
             }
-        return info
+            for key, provider in self.providers.items()
+        }
+    
+    # ACVF-specific methods
+    async def generate_challenger_response(self, subject_content: str, context: str,
+                                         provider: Optional[str] = None, **kwargs) -> LLMResponse:
+        """Generate a challenger argument for ACVF debate."""
+        system_prompt = """You are a Challenger in an adversarial verification system. Your role is to:
+
+1. Critically analyze the given content for potential issues, errors, or weaknesses
+2. Question claims that lack sufficient evidence or reasoning
+3. Identify logical fallacies, biases, or inconsistencies
+4. Propose alternative interpretations or contradictory evidence
+5. Be thorough but fair in your criticism
+
+Focus on finding genuine problems rather than being argumentative for its own sake.
+Your goal is to improve the overall quality of information verification."""
+
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": f"Content to challenge:\n{subject_content}\n\nContext:\n{context}\n\nProvide your challenger argument:"}
+        ]
+        
+        return await self.generate_response(messages, provider=provider, **kwargs)
+    
+    async def generate_defender_response(self, subject_content: str, challenger_arguments: str, 
+                                       context: str, provider: Optional[str] = None, **kwargs) -> LLMResponse:
+        """Generate a defender response for ACVF debate."""
+        system_prompt = """You are a Defender in an adversarial verification system. Your role is to:
+
+1. Defend the accuracy and validity of the given content
+2. Provide evidence and reasoning to counter challenger arguments
+3. Clarify misunderstandings or misinterpretations
+4. Acknowledge legitimate concerns while defending what is correct
+5. Provide additional supporting evidence when available
+
+Be honest about limitations but strong in defending valid content.
+Your goal is to ensure accurate information is properly validated."""
+
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": f"Content to defend:\n{subject_content}\n\nChallenger arguments:\n{challenger_arguments}\n\nContext:\n{context}\n\nProvide your defense:"}
+        ]
+        
+        return await self.generate_response(messages, provider=provider, **kwargs)
+    
+    async def generate_judge_verdict(self, subject_content: str, challenger_arguments: str,
+                                   defender_arguments: str, context: str,
+                                   provider: Optional[str] = None, **kwargs) -> LLMResponse:
+        """Generate a judge verdict for ACVF debate."""
+        
+        system_prompt = """You are a Judge in an adversarial verification system. Your role is to:
+
+1. Objectively evaluate both challenger and defender arguments
+2. Assess the strength of evidence and reasoning from both sides
+3. Identify which arguments are most compelling and accurate
+4. Provide a fair verdict based on the quality of arguments and evidence
+5. Explain your reasoning clearly and thoroughly
+
+Be impartial and focus on factual accuracy and logical strength.
+Your verdict will help determine the final verification outcome."""
+
+        # Define the expected response schema for structured output
+        response_schema = {
+            "type": "object",
+            "properties": {
+                "verdict": {
+                    "type": "string",
+                    "enum": ["challenger_wins", "defender_wins", "tie", "insufficient_evidence", "invalid_debate"]
+                },
+                "confidence": {
+                    "type": "number",
+                    "minimum": 0.0,
+                    "maximum": 1.0
+                },
+                "challenger_score": {
+                    "type": "number",
+                    "minimum": 0.0,
+                    "maximum": 1.0
+                },
+                "defender_score": {
+                    "type": "number",
+                    "minimum": 0.0,
+                    "maximum": 1.0
+                },
+                "reasoning": {
+                    "type": "string"
+                },
+                "key_points_challenger": {
+                    "type": "array",
+                    "items": {"type": "string"}
+                },
+                "key_points_defender": {
+                    "type": "array", 
+                    "items": {"type": "string"}
+                },
+                "critical_weaknesses": {
+                    "type": "array",
+                    "items": {"type": "string"}
+                }
+            },
+            "required": ["verdict", "confidence", "challenger_score", "defender_score", "reasoning"]
+        }
+
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": f"""Content being debated:
+{subject_content}
+
+Challenger arguments:
+{challenger_arguments}
+
+Defender arguments:
+{defender_arguments}
+
+Context:
+{context}
+
+Please provide your verdict as a JSON response following the required schema."""}
+        ]
+        
+        return await self.generate_structured_response(messages, response_schema, provider=provider, **kwargs)
+    
+    async def generate_role_response(self, role: ACVFRole, subject_content: str, 
+                                   debate_context: Dict[str, Any], provider: Optional[str] = None, 
+                                   **kwargs) -> LLMResponse:
+        """Generate response for a specific ACVF role."""
+        if role == ACVFRole.CHALLENGER:
+            context = debate_context.get('context', '')
+            return await self.generate_challenger_response(subject_content, context, provider, **kwargs)
+        
+        elif role == ACVFRole.DEFENDER:
+            challenger_args = debate_context.get('challenger_arguments', '')
+            context = debate_context.get('context', '')
+            return await self.generate_defender_response(subject_content, challenger_args, context, provider, **kwargs)
+        
+        elif role == ACVFRole.JUDGE:
+            challenger_args = debate_context.get('challenger_arguments', '')
+            defender_args = debate_context.get('defender_arguments', '')
+            context = debate_context.get('context', '')
+            return await self.generate_judge_verdict(subject_content, challenger_args, defender_args, context, provider, **kwargs)
+        
+        else:
+            raise ValueError(f"Unknown ACVF role: {role}")

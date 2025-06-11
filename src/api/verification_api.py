@@ -13,7 +13,7 @@ import json
 import redis
 import os
 
-from ..models.verification import (
+from src.models.verification import (
     VerificationTask,
     VerificationChainConfig,
     VerificationChainResult,
@@ -21,9 +21,9 @@ from ..models.verification import (
     Priority,
     VerificationMetrics
 )
-from ..verification.config.chain_loader import ChainConfigLoader, create_default_chain_configs
-from ..verification.workers.verification_worker import execute_verification_chain_task, celery_app
-from ..document_ingestion import document_service
+from src.verification.config.chain_loader import ChainConfigLoader, create_default_chain_configs
+from src.verification.workers.verification_worker import execute_verification_chain_task, celery_app
+from src.document_ingestion import document_service
 
 
 # Configure logging

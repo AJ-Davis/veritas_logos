@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from typing import List, Optional, Dict, Any, Union, Set
 from enum import Enum
 from dataclasses import dataclass, field
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 import uuid
 
 
@@ -54,7 +54,8 @@ class VerificationPassConfig(BaseModel):
         description="List of pass types that must complete before this pass can run"
     )
     
-    @validator('pass_id')
+    @field_validator('pass_id')
+    @classmethod
     def validate_pass_id(cls, v):
         """Ensure pass_id is not empty and is a valid identifier."""
         if not v or not v.strip():
@@ -64,10 +65,11 @@ class VerificationPassConfig(BaseModel):
             raise ValueError("pass_id must contain only alphanumeric characters, underscores, and hyphens")
         return v.strip()
     
-    @validator('depends_on')
-    def validate_dependencies(cls, v, values):
+    @field_validator('depends_on')
+    @classmethod
+    def validate_dependencies(cls, v, info):
         """Ensure dependencies don't include self-reference."""
-        if 'pass_type' in values and values['pass_type'] in v:
+        if info.data and 'pass_type' in info.data and info.data['pass_type'] in v:
             raise ValueError("A pass cannot depend on itself")
         return v
 
@@ -83,7 +85,8 @@ class VerificationChainConfig(BaseModel):
     stop_on_failure: bool = True
     metadata: Dict[str, Any] = Field(default_factory=dict)
     
-    @validator('passes')
+    @field_validator('passes')
+    @classmethod
     def validate_passes(cls, v):
         """Validate passes configuration and dependencies."""
         if not v:
@@ -259,6 +262,9 @@ class VerificationTask(BaseModel):
     document_id: str
     chain_config: VerificationChainConfig
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    
+    # Optional in-memory document content (takes precedence over loading from document_id)
+    document_content: Optional[str] = None
 
     scheduled_at: Optional[datetime] = None
     started_at: Optional[datetime] = None

@@ -1,0 +1,1 @@
+# VeritasLogos - Quality control and verification of LLM generate reports

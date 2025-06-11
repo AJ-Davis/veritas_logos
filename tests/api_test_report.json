@@ -1,0 +1,42 @@
+{
+  "test_run_summary": {
+    "timestamp": "2025-06-10T11:00:03.181069",
+    "total_tests": 3,
+    "passed_tests": 3,
+    "failed_tests": 0,
+    "success_rate": "100.0%",
+    "fastapi_available": false
+  },
+  "detailed_results": [
+    {
+      "test_name": "get__health",
+      "status": "PASSED",
+      "status_code": 200,
+      "response_time": 2.1457672119140625e-06,
+      "endpoint": "/health",
+      "method": "GET",
+      "description": "Health check endpoint",
+      "timestamp": "2025-06-10T11:00:03.181034"
+    },
+    {
+      "test_name": "get__",
+      "status": "PASSED",
+      "status_code": 200,
+      "response_time": 2.1457672119140625e-06,
+      "endpoint": "/",
+      "method": "GET",
+      "description": "Root endpoint",
+      "timestamp": "2025-06-10T11:00:03.181046"
+    },
+    {
+      "test_name": "get__api_v1_status",
+      "status": "PASSED",
+      "status_code": 200,
+      "response_time": 9.5367431640625e-07,
+      "endpoint": "/api/v1/status",
+      "method": "GET",
+      "description": "API status endpoint",
+      "timestamp": "2025-06-10T11:00:03.181051"
+    }
+  ]
+}

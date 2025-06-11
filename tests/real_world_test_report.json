@@ -1,0 +1,32 @@
+{
+  "test_run_summary": {
+    "timestamp": "2025-06-10T10:54:24.288143",
+    "total_tests": 2,
+    "passed_tests": 2,
+    "failed_tests": 0,
+    "success_rate": "100.0%",
+    "total_execution_time": "74.82s"
+  },
+  "test_results": [
+    {
+      "test_name": "text_document_verification",
+      "status": "PASSED",
+      "processing_time": 37.80103516578674,
+      "document_size": 1679,
+      "verification_status": "completed",
+      "timestamp": "2025-06-10T10:53:47.264003"
+    },
+    {
+      "test_name": "markdown_document_verification",
+      "status": "PASSED",
+      "processing_time": 37.02372598648071,
+      "document_size": 4356,
+      "verification_status": "completed",
+      "timestamp": "2025-06-10T10:54:24.287958"
+    }
+  ],
+  "system_validation": {
+    "document_ingestion": "PASSED",
+    "verification_pipeline": "PASSED"
+  }
+}

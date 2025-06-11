@@ -10,7 +10,7 @@ from datetime import datetime
 from celery import Celery
 from celery.exceptions import Retry, WorkerLostError
 
-from ...models.verification import (
+from src.models.verification import (
     VerificationTask,
     VerificationChainResult,
     VerificationResult,
@@ -19,11 +19,14 @@ from ...models.verification import (
     VerificationPassType,
     VerificationError
 )
-from ...models.document import ParsedDocument
-from ...document_ingestion import document_service
-from ..passes.base_pass import BaseVerificationPass, MockVerificationPass
-from ..passes.implementations.claim_extraction_pass import ClaimExtractionPass
-from ..config.chain_loader import ChainConfigLoader
+from src.models.document import ParsedDocument
+from src.document_ingestion import document_service
+from src.verification.passes.base_pass import BaseVerificationPass, MockVerificationPass
+from src.verification.passes.implementations.claim_extraction_pass import ClaimExtractionPass
+from src.verification.passes.implementations.citation_verification_pass import CitationVerificationPass
+from src.verification.passes.implementations.logic_analysis_pass import LogicAnalysisPass
+from src.verification.passes.implementations.bias_scan_pass import BiasScanPass
+from src.verification.config.chain_loader import ChainConfigLoader
 
 
 # Configure logging
@@ -65,17 +68,27 @@ class VerificationWorker:
     
     def _initialize_pass_registry(self):
         """Initialize the registry of available verification passes."""
-        # Register the actual claim extraction pass
+        # Register real verification pass implementations
         self.pass_registry[VerificationPassType.CLAIM_EXTRACTION] = ClaimExtractionPass()
+        self.pass_registry[VerificationPassType.CITATION_CHECK] = CitationVerificationPass()
+        self.pass_registry[VerificationPassType.LOGIC_ANALYSIS] = LogicAnalysisPass()
+        self.pass_registry[VerificationPassType.BIAS_SCAN] = BiasScanPass()
         
-        # Register mock passes for other types (to be replaced in subsequent tasks)
+        # Register mock passes for types not yet implemented
+        real_implementations = {
+            VerificationPassType.CLAIM_EXTRACTION,
+            VerificationPassType.CITATION_CHECK,
+            VerificationPassType.LOGIC_ANALYSIS,
+            VerificationPassType.BIAS_SCAN
+        }
+        
         for pass_type in VerificationPassType:
             if pass_type not in self.pass_registry:
                 self.pass_registry[pass_type] = MockVerificationPass(pass_type)
         
         logger.info(f"Initialized {len(self.pass_registry)} verification passes")
-        logger.info(f"Real implementations: {[VerificationPassType.CLAIM_EXTRACTION.value]}")
-        logger.info(f"Mock implementations: {[pt.value for pt in VerificationPassType if pt != VerificationPassType.CLAIM_EXTRACTION]}")
+        logger.info(f"Real implementations: {[pt.value for pt in real_implementations]}")
+        logger.info(f"Mock implementations: {[pt.value for pt in VerificationPassType if pt not in real_implementations]}")
     
     def register_pass(self, pass_type: VerificationPassType, pass_instance: BaseVerificationPass):
         """
@@ -110,8 +123,13 @@ class VerificationWorker:
         )
         
         try:
-            # Load document content
-            document_content = await self._load_document_content(verification_task.document_id)
+            # Load document content (use in-memory content if available, otherwise load from disk)
+            if verification_task.document_content:
+                document_content = verification_task.document_content
+                logger.info(f"Using in-memory document content ({len(document_content)} characters)")
+            else:
+                document_content = await self._load_document_content(verification_task.document_id)
+                logger.info(f"Loaded document content from {verification_task.document_id}")
             
             # Create verification context
             context = VerificationContext(

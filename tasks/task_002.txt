@@ -1,6 +1,6 @@
 # Task ID: 2
 # Title: Implement Basic Verification Chain Framework
-# Status: pending
+# Status: done
 # Dependencies: 1
 # Priority: high
 # Description: Create the core orchestration system for sequential verification passes (claim extraction, evidence retrieval, citation check, logic analysis, bias scan).

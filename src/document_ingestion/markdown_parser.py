@@ -7,16 +7,15 @@ from pathlib import Path
 from typing import List
 from markdown_it import MarkdownIt
 
-from .base_parser import BaseDocumentParser
-from ..models.document import ParsedDocument, DocumentSection, DocumentFormat
+from src.document_ingestion.base_parser import BaseDocumentParser
+from src.models.document import ParsedDocument, DocumentSection, DocumentFormat
 
 
 class MarkdownParser(BaseDocumentParser):
     """Parser for Markdown files."""
     
     def __init__(self):
-        super().__init__()
-        self.supported_extensions = {'.md', '.markdown'}
+        super().__init__(supported_extensions={'.md', '.markdown'})
         self.md = MarkdownIt()
     
     def get_format(self) -> DocumentFormat:
@@ -125,12 +124,11 @@ class MarkdownParser(BaseDocumentParser):
                             section_type=current_type,
                             position=position
                         ))
-                position += len(section_content) + 1
+                        position += len(section_content) + 1
                 
                 # Start new section
                 current_section = [line] if line_stripped else []
                 current_type = section_type
-                position += len('\n'.join(current_section)) + 1
             else:
                 # Continue current section
                 current_section.append(line)

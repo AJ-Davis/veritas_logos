@@ -6,13 +6,13 @@ from pathlib import Path
 from typing import List, Optional, Dict, Any
 import mimetypes
 
-from .base_parser import BaseDocumentParser
-from .txt_parser import TxtParser
-from .markdown_parser import MarkdownParser
-from .pdf_parser import PdfParser
-from .docx_parser import DocxParser
-from ..models.document import ParsedDocument, DocumentFormat
-from ..utils.validation import validate_file_before_processing
+from src.document_ingestion.base_parser import BaseDocumentParser
+from src.document_ingestion.txt_parser import TxtParser
+from src.document_ingestion.markdown_parser import MarkdownParser
+from src.document_ingestion.pdf_parser import PdfParser
+from src.document_ingestion.docx_parser import DocxParser
+from src.models.document import ParsedDocument, DocumentFormat
+from src.utils.validation import validate_file_before_processing
 
 
 class DocumentIngestionService:
@@ -71,9 +71,9 @@ class DocumentIngestionService:
             Parser instance or None if no suitable parser found
         """
         file_ext = Path(file_path).suffix.lower()
+        return self._parser_map.get(file_ext)
+    
     def parse_document(self, file_path: str, **kwargs) -> ParsedDocument:
-...
-            return parser.parse(file_path, **kwargs)
         """
         Parse a document file and return structured content.
         

@@ -122,7 +122,7 @@ The end.
             assert len(result.sections) > 0
             assert result.metadata is not None
             assert result.metadata.format == DocumentFormat.MARKDOWN
-            assert 'This is a **test** markdown document.' in result.raw_data
+            assert 'This is a **test** markdown document.' in result.raw_data['markdown_content']
             
             # Check that sections are properly identified
             headings = result.get_sections_by_type("heading")
@@ -152,7 +152,7 @@ The end.
             
             assert not result.is_valid
             assert len(result.errors) > 0
-            assert "No parser available" in result.errors[0]
+            assert "Unsupported file extension" in result.errors[0]
             
         finally:
             os.unlink(temp_path)

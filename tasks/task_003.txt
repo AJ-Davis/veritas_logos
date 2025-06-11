@@ -1,6 +1,6 @@
 # Task ID: 3
 # Title: Develop Claim Extraction Module
-# Status: pending
+# Status: done
 # Dependencies: 2
 # Priority: high
 # Description: Implement the first verification pass that extracts claims from documents for subsequent verification.

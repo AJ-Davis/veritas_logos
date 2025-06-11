@@ -1,0 +1,55 @@
+---
+chain_id: "citation_verification_test"
+name: "Citation Verification Test Chain"
+description: "Test chain that runs claim extraction followed by citation verification"
+global_timeout_seconds: 600
+parallel_execution: false
+stop_on_failure: false
+metadata:
+  version: "1.0"
+  purpose: "testing"
+  domain: "general"
+  complexity: "medium"
+  estimated_duration_minutes: 8
+
+passes:
+  - type: "claim_extraction"
+    name: "Extract Claims"
+    pass_id: "extract_claims"
+    description: "Extract claims from document using LLM"
+    enabled: true
+    timeout_seconds: 120
+    max_retries: 2
+    depends_on: []
+    
+    parameters:
+      model: "claude-3-5-sonnet-20241022"
+      prompt_version: "v1"
+      max_claims: 30
+      min_confidence: 0.5
+
+  - type: "citation_check"
+    name: "Verify Citations"
+    pass_id: "verify_citations"
+    description: "Verify citations against their associated claims"
+    enabled: true
+    timeout_seconds: 300
+    max_retries: 2
+    depends_on: []
+    
+    parameters:
+      model: "claude-3-5-sonnet-20241022"
+      prompt_version: "v1"
+      max_citations: 20
+      min_confidence: 0.3
+      retrieve_content: true
+
+# Dependencies
+dependencies: []
+
+# Metadata
+metadata:
+  purpose: "testing"
+  domain: "general"
+  complexity: "medium"
+  estimated_duration_minutes: 8 

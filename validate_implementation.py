@@ -8,8 +8,8 @@ import sys
 import os
 from pathlib import Path
 
-# Add src to path
-sys.path.insert(0, str(Path(__file__).parent / 'src'))
+# Add project root to path to allow src.* imports
+sys.path.insert(0, str(Path(__file__).parent))
 
 def test_imports():
     """Test that all modules can be imported successfully."""
@@ -17,7 +17,7 @@ def test_imports():
     
     try:
         # Test claim models
-        from models.claims import (
+        from src.models.claims import (
             ExtractedClaim, 
             ClaimExtractionResult, 
             ClaimLocation, 
@@ -27,15 +27,15 @@ def test_imports():
         print("✅ Claim models imported successfully")
         
         # Test LLM client
-        from llm.llm_client import LLMClient, LLMConfig, LLMProvider, LLMResponse
+        from src.llm.llm_client import LLMClient, LLMConfig, LLMProvider, LLMResponse
         print("✅ LLM client imported successfully")
         
         # Test prompts
-        from llm.prompts import PromptType, prompt_manager
+        from src.llm.prompts import PromptType, prompt_manager
         print("✅ Prompt templates imported successfully")
         
         # Test claim extraction pass
-        from verification.passes.implementations.claim_extraction_pass import ClaimExtractionPass
+        from src.verification.passes.implementations.claim_extraction_pass import ClaimExtractionPass
         print("✅ Claim extraction pass imported successfully")
         
         return True
@@ -53,7 +53,7 @@ def test_model_creation():
     print("\nTesting model creation...")
     
     try:
-        from models.claims import (
+        from src.models.claims import (
             ClaimLocation,
             ExtractedClaim,
             ClaimExtractionResult,
@@ -104,7 +104,7 @@ def test_prompt_templates():
     print("\nTesting prompt templates...")
     
     try:
-        from llm.prompts import PromptType, prompt_manager
+        from src.llm.prompts import PromptType, prompt_manager
         
         # Get claim extraction template
         template = prompt_manager.get_template(PromptType.CLAIM_EXTRACTION, "v1")
@@ -137,8 +137,8 @@ def test_verification_pass_init():
     print("\nTesting verification pass initialization...")
     
     try:
-        from verification.passes.implementations.claim_extraction_pass import ClaimExtractionPass
-        from models.verification import VerificationPassType
+        from src.verification.passes.implementations.claim_extraction_pass import ClaimExtractionPass
+        from src.models.verification import VerificationPassType
         
         # Create pass with mock LLM client
         pass_instance = ClaimExtractionPass()
@@ -163,9 +163,9 @@ def test_integration_with_worker():
     print("\nTesting integration with verification worker...")
     
     try:
-        from verification.workers.verification_worker import VerificationWorker
-        from verification.passes.implementations.claim_extraction_pass import ClaimExtractionPass
-        from models.verification import VerificationPassType
+        from src.verification.workers.verification_worker import VerificationWorker
+        from src.verification.passes.implementations.claim_extraction_pass import ClaimExtractionPass
+        from src.models.verification import VerificationPassType
         
         # Create worker
         worker = VerificationWorker()

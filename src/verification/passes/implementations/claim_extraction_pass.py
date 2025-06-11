@@ -11,8 +11,8 @@ import uuid
 from typing import List, Dict, Any, Optional, Tuple
 from datetime import datetime
 
-from ...base_pass import BaseVerificationPass
-from ....models.verification import (
+from src.verification.passes.base_pass import BaseVerificationPass
+from src.models.verification import (
     VerificationPassConfig,
     VerificationResult,
     VerificationContext,
@@ -20,15 +20,15 @@ from ....models.verification import (
     VerificationStatus,
     VerificationError
 )
-from ....models.claims import (
+from src.models.claims import (
     ExtractedClaim,
     ClaimExtractionResult,
     ClaimLocation,
     ClaimType,
     ClaimCategory
 )
-from ....llm.llm_client import LLMClient, LLMConfig, LLMProvider
-from ....llm.prompts import PromptType, prompt_manager
+from src.llm.llm_client import LLMClient, LLMConfig, LLMProvider
+from src.llm.prompts import PromptType, prompt_manager
 
 
 logger = logging.getLogger(__name__)
@@ -69,7 +69,7 @@ class ClaimExtractionPass(BaseVerificationPass):
         if anthropic_key:
             configs.append(LLMConfig(
                 provider=LLMProvider.ANTHROPIC,
-                model=os.getenv('ANTHROPIC_MODEL', 'claude-3-sonnet-20240229'),
+                model=os.getenv('ANTHROPIC_MODEL', 'claude-3-5-sonnet-20241022'),
                 api_key=anthropic_key,
                 temperature=float(os.getenv('ANTHROPIC_TEMPERATURE', '0.1')),
                 max_tokens=int(os.getenv('ANTHROPIC_MAX_TOKENS', '4000'))
